@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 project(imgui-cocos)
 
 add_library(imgui-cocos src/main.cpp)
@@ -10,8 +7,6 @@ add_library(imgui-cocos src/main.cpp)
 include(cmake/CPM.cmake)
 
 CPMAddPackage("gh:ocornut/imgui#v1.88")
-
-target_compile_definitions(imgui-cocos PRIVATE CC_DLL=)
 
 target_include_directories(imgui-cocos PUBLIC ${imgui_SOURCE_DIR} include)
 
