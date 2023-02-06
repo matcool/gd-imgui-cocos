@@ -11,7 +11,7 @@ public:
 	static ImGuiNode* create(const std::function<void()>& draw_callback);
 
 protected:
-	bool init();
+	bool init() override;
 
 	void draw() override;
 
