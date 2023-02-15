@@ -9,15 +9,7 @@ due to cocos there are a few things missing:
 
 ## setup
 
-set the `IMGUI_COCOS_TARGET` cmake variable before importing to either
-- `cocos2d` if you're using cocos-headers
-- `geode-sdk` if you're using geode
-
-```cmake
-set(IMGUI_COCOS_TARGET geode-sdk)
-```
-
-and then link to it ofc
+link to it like any other cmake library
 
 ## usage
 

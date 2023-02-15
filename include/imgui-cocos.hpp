@@ -2,16 +2,18 @@
 
 #include <cocos2d.h>
 #include <imgui.h>
+#include <functional>
 
 class ImGuiNode : public cocos2d::CCLayer, cocos2d::CCIMEDelegate {
 	bool m_has_created_fonts_texture = false;
 	std::function<void()> m_draw_callback;
 	bool m_ime_attached = false;
+	cocos2d::CCTexture2D* m_font_texture = nullptr;
 public:
 	static ImGuiNode* create(const std::function<void()>& draw_callback);
 
 protected:
-	bool init();
+	bool init() override;
 
 	void draw() override;
 

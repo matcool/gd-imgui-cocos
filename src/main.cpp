@@ -1,5 +1,4 @@
 #include <array>
-#include <functional>
 #include <imgui-cocos.hpp>
 
 using namespace cocos2d;
@@ -108,8 +107,17 @@ bool ImGuiNode::init() {
 	io.BackendPlatformUserData = this;
 	io.BackendPlatformName = "cocos2d-2.2.3 GD";
 
+	unsigned char* pixels;
+	int width, height;
+	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+
+	m_font_texture = new CCTexture2D;
+	m_font_texture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(static_cast<float>(width), static_cast<float>(height)));
+
+	io.Fonts->SetTexID(reinterpret_cast<ImTextureID>(static_cast<std::uintptr_t>(m_font_texture->getName())));
+
 	// if using alks fixes comment this out
-#ifndef GEODE_SDK
+#ifndef GEODE_PLATFORM_NAME
 	CCDirector::sharedDirector()->getTouchDispatcher()->incrementForcePrio(2);
 #endif
 
@@ -142,21 +150,6 @@ void ImGuiNode::new_frame() {
 	auto& io = ImGui::GetIO();
 	
 	// opengl2 new frame
-	if (!m_has_created_fonts_texture) {
-		m_has_created_fonts_texture = true;
-
-		unsigned char* pixels;
-		int width, height;
-		io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-		auto* tex2d = new CCTexture2D;
-		tex2d->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(width, height));
-
-		// TODO: not leak this :-)
-		tex2d->retain();
-
-		io.Fonts->SetTexID(tex2d);
-	}
 
 	auto* director = CCDirector::sharedDirector();
 	const auto win_size = director->getWinSize();
@@ -279,8 +272,8 @@ void ImGuiNode::render_draw_data(ImDrawData* draw_data) {
 		auto* idx_buffer = list->IdxBuffer.Data;
 		auto* vtx_buffer = list->VtxBuffer.Data;
 		for (auto& cmd : list->CmdBuffer) {
-			const auto tex2d = reinterpret_cast<CCTexture2D*>(cmd.GetTexID());
-			ccGLBindTexture2D(tex2d->getName());
+			const auto tex_id = reinterpret_cast<std::uintptr_t>(cmd.GetTexID());
+			ccGLBindTexture2D(static_cast<GLuint>(tex_id));
 
 			const auto rect = cmd.ClipRect;
 			const auto orig = frame_to_cocos(ImVec2(rect.x, rect.y));
@@ -325,4 +318,5 @@ void ImGuiNode::render_draw_data(ImDrawData* draw_data) {
 ImGuiNode::~ImGuiNode() {
 	ImGui::DestroyContext();
 	imgui_node_exists = false;
+	delete m_font_texture;
 }
