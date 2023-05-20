@@ -1,35 +1,35 @@
 # gd-imgui-cocos
 
-imgui in gd using only cocos! no hooks or anything
-
-due to cocos there are a few things missing:
-- no right clicking
-- keyboard input might not work properly
-- mouse hovering only on windows (for now)
+imgui in gd using only cocos! ~~no hooks or anything~~ for geode
 
 ## setup
 
-link to it like any other cmake library
+link to it like any other cmake library, you can also use cpm which comes with geode
+
+```cmake
+CPMAddPackage("gh:matcool/gd-imgui-cocos#commithash") # specify a commit!
+
+target_link_libraries(${PROJECT_NAME} imgui-cocos)
+```
 
 ## usage
 
 ```cpp
 #include <imgui-cocos.hpp>
-#include <imgui.h>
 
-// ... somewhere in the code, like a button callback
-auto* node = ImGuiNode::create([]() {
-    ImGui::Begin("hello");
-    ImGui::Button("Hello world!!");
-    ImGui::End();
-});
-// IMPORTANT!! there can only be one ImGuiNode at a time,
-// since ImGui stuff uses singletons (ImGui::GetIO() for example)
-// so when one already exists, create will return a nullptr
-if (node) {
-    node->setZOrder(999);
-    CCDirector::sharedDirector()->getRunningScene()->addChild(node);
+$on_mod(Loaded) {
+	ImGuiCocos::get().setup([] {
+		// this runs after imgui has been setup,
+        // its a callback as imgui will be re initialized when toggling fullscreen,
+        // so use this to setup any themes and or fonts!
+	}).draw([] {
+		ImGui::Begin("My awesome window");
+
+		ImGui::Button("Awesome button");
+		
+		ImGui::End();
+	});
 }
 ```
 
-another thing to keep in mind is since this is just a node in the current scene, it will go away when you switch scenes, meaning you will have to implement the code for moving it to another scene yourself (like the AchievementNotifier in gd)
+This code will create a floating window that will persist throughout scenes, and should always be on top of everything

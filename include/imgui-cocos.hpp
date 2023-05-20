@@ -1,49 +1,51 @@
 #pragma once
 
 #include <cocos2d.h>
-#include <imgui.h>
 #include <functional>
+#include <string>
+#include <imgui.h>
 
-class ImGuiNode : public cocos2d::CCLayer, cocos2d::CCIMEDelegate {
-	bool m_has_created_fonts_texture = false;
-	std::function<void()> m_draw_callback;
-	bool m_ime_attached = false;
-	cocos2d::CCTexture2D* m_font_texture = nullptr;
+class ImGuiCocos {
+private:
+    cocos2d::CCTexture2D* m_fontTexture = nullptr;
+    bool m_initialized = false;
+    bool m_visible = true;
+    std::function<void()> m_setupCall, m_drawCall;
+
+    ImGuiCocos();
+
+    void newFrame();
+    void renderFrame();
 public:
-	static ImGuiNode* create(const std::function<void()>& draw_callback);
+    ImGuiCocos(const ImGuiCocos&) = delete;
+    ImGuiCocos(ImGuiCocos&&) = delete;
 
-protected:
-	bool init() override;
+    static ImGuiCocos& get();
 
-	void draw() override;
+    void setup();
+    // called on mod unloaded
+    void destroy();
+    // called on swapBuffers
+    void drawFrame();
 
-	void new_frame();
+    void onSetup(std::function<void()>);
+    void onDraw(std::function<void()>);
 
-	bool canAttachWithIME() override;
-	bool canDetachWithIME() override;
+    ImGuiCocos& setup(std::function<void()> fun) {
+        this->onSetup(fun);
+        this->setup();
+        return *this;
+    }
 
-	void insertText(const char* text, int len) override;
+    ImGuiCocos& draw(std::function<void()> fun) {
+        this->onDraw(fun);
+        return *this;
+    }
 
-	void deleteBackward() override;
-
-	bool ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent*) override;
-
-	void ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent*) override;
-
-	void ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent*) override;
-
-	void scrollWheel(float dy, float dx) override;
-
-	void keyDown(cocos2d::enumKeyCodes key) override;
-
-	void keyUp(cocos2d::enumKeyCodes key) override;
-
-	// these dont ever get called :(
-	void rightKeyDown() override;
-
-	void rightKeyUp() override;
-
-	void render_draw_data(ImDrawData* draw_data);
-
-	~ImGuiNode();
+    void toggle() { m_visible = !m_visible; }
+    bool isVisible() { return m_visible; }
+    void setVisible(bool v) { m_visible = v; }
+	
+	static ImVec2 cocosToFrame(const cocos2d::CCPoint& pos);
+	static cocos2d::CCPoint frameToCocos(const ImVec2& pos);
 };
