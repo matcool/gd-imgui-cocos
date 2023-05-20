@@ -112,9 +112,11 @@ class $modify(CCEGLView) {
         CCEGLView::swapBuffers();
     }
 
+#ifdef GEODE_IS_WINDOWS
     void toggleFullScreen(bool value) {
         ImGuiCocos::get().destroy();
         CCEGLView::toggleFullScreen(value);
         ImGuiCocos::get().setup();
     }
+#endif
 };
