@@ -201,3 +201,21 @@ void ImGuiCocos::renderFrame() {
 
 	glDisable(GL_SCISSOR_TEST);
 }
+
+void ImGuiCocos::toggle() {
+	this->setVisible(!m_visible);
+}
+
+void ImGuiCocos::setVisible(bool v) {
+	m_visible = v;
+	if (!v) {
+		auto& io = ImGui::GetIO();
+		io.WantCaptureKeyboard = false;
+		io.WantCaptureMouse = false;
+		io.WantTextInput = false;
+	}
+}
+
+bool ImGuiCocos::isVisible() {
+	return m_visible;
+}

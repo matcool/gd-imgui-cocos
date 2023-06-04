@@ -42,9 +42,9 @@ public:
         return *this;
     }
 
-    void toggle() { m_visible = !m_visible; }
-    bool isVisible() { return m_visible; }
-    void setVisible(bool v) { m_visible = v; }
+    void toggle();
+    bool isVisible();
+    void setVisible(bool v);
 	
 	static ImVec2 cocosToFrame(const cocos2d::CCPoint& pos);
 	static cocos2d::CCPoint frameToCocos(const ImVec2& pos);
