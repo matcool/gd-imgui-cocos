@@ -51,6 +51,12 @@ ImGuiCocos& ImGuiCocos::setup() {
 	io.BackendPlatformName = "cocos2d-2.2.3 GD";
 	io.BackendPlatformUserData = this;
 
+	m_initialized = true;
+
+	// call the setup function before creating the font texture,
+	// to allow for custom fonts
+	m_setupCall();
+
 	unsigned char* pixels;
 	int width, height;
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
@@ -59,10 +65,6 @@ ImGuiCocos& ImGuiCocos::setup() {
 	m_fontTexture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(static_cast<float>(width), static_cast<float>(height)));
 
 	io.Fonts->SetTexID(reinterpret_cast<ImTextureID>(static_cast<std::uintptr_t>(m_fontTexture->getName())));
-
-	m_initialized = true;
-
-	m_setupCall();
 
 	return *this;
 }
