@@ -14,6 +14,8 @@ target_link_libraries(${PROJECT_NAME} imgui-cocos)
 
 ## usage
 
+Make sure you call the `setup` method! Even if you don't need the callback you can use the overload with no args.
+
 ```cpp
 #include <imgui-cocos.hpp>
 

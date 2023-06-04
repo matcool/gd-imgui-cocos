@@ -22,25 +22,15 @@ public:
 
     static ImGuiCocos& get();
 
-    void setup();
     // called on mod unloaded
     void destroy();
     // called on swapBuffers
     void drawFrame();
 
-    void onSetup(std::function<void()>);
-    void onDraw(std::function<void()>);
+    ImGuiCocos& setup(std::function<void()> fun);
+    ImGuiCocos& setup();
 
-    ImGuiCocos& setup(std::function<void()> fun) {
-        this->onSetup(fun);
-        this->setup();
-        return *this;
-    }
-
-    ImGuiCocos& draw(std::function<void()> fun) {
-        this->onDraw(fun);
-        return *this;
-    }
+    ImGuiCocos& draw(std::function<void()> fun);
 
     void toggle();
     bool isVisible();

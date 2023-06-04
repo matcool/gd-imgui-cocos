@@ -13,16 +13,36 @@ ImGuiCocos::ImGuiCocos() {
 	m_setupCall = m_drawCall = [] {};
 }
 
-void ImGuiCocos::onSetup(std::function<void()> fun) {
+ImGuiCocos& ImGuiCocos::setup(std::function<void()> fun) {
 	m_setupCall = fun;
+	return this->setup();
 }
 
-void ImGuiCocos::onDraw(std::function<void()> fun) {
+ImGuiCocos& ImGuiCocos::draw(std::function<void()> fun) {
 	m_drawCall = fun;
+	return *this;
 }
 
-void ImGuiCocos::setup() {
-	if (m_initialized) return;
+void ImGuiCocos::toggle() {
+	this->setVisible(!m_visible);
+}
+
+void ImGuiCocos::setVisible(bool v) {
+	m_visible = v;
+	if (!m_visible) {
+		auto& io = ImGui::GetIO();
+		io.WantCaptureKeyboard = false;
+		io.WantCaptureMouse = false;
+		io.WantTextInput = false;
+	}
+}
+
+bool ImGuiCocos::isVisible() {
+	return m_visible;
+}
+
+ImGuiCocos& ImGuiCocos::setup() {
+	if (m_initialized) return *this;
 
 	ImGui::CreateContext();
 
@@ -43,6 +63,8 @@ void ImGuiCocos::setup() {
 	m_initialized = true;
 
 	m_setupCall();
+
+	return *this;
 }
 
 void ImGuiCocos::destroy() {
@@ -200,22 +222,4 @@ void ImGuiCocos::renderFrame() {
 	}
 
 	glDisable(GL_SCISSOR_TEST);
-}
-
-void ImGuiCocos::toggle() {
-	this->setVisible(!m_visible);
-}
-
-void ImGuiCocos::setVisible(bool v) {
-	m_visible = v;
-	if (!v) {
-		auto& io = ImGui::GetIO();
-		io.WantCaptureKeyboard = false;
-		io.WantCaptureMouse = false;
-		io.WantTextInput = false;
-	}
-}
-
-bool ImGuiCocos::isVisible() {
-	return m_visible;
 }
