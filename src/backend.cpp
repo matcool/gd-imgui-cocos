@@ -51,6 +51,10 @@ ImGuiCocos& ImGuiCocos::setup() {
 	io.BackendPlatformName = "cocos2d-2.2.3 GD";
 	io.BackendPlatformUserData = this;
 
+	// use static since imgui does not own the pointer!
+	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
+	io.IniFilename = iniPath.c_str();
+
 	m_initialized = true;
 
 	// call the setup function before creating the font texture,
