@@ -48,7 +48,7 @@ ImGuiCocos& ImGuiCocos::setup() {
 
 	auto& io = ImGui::GetIO();
 
-	io.BackendPlatformName = "cocos2d-2.2.3 GD";
+	io.BackendPlatformName = "gd-imgui-cocos + Geode";
 	io.BackendPlatformUserData = this;
 
 	// use static since imgui does not own the pointer!
@@ -79,24 +79,6 @@ void ImGuiCocos::destroy() {
 	ImGui::DestroyContext();
 	delete m_fontTexture;
 	m_initialized = false;
-}
-
-// based off ccDrawSolidPoly
-// but modified to use textures
-static void drawTriangle(const std::array<CCPoint, 3>& poli, const std::array<ccColor4F, 3>& colors, const std::array<CCPoint, 3>& uvs) {
-	auto* shader = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor);
-	shader->use();
-	shader->setUniformsForBuiltins();
-
-	ccGLEnableVertexAttribs(kCCVertexAttribFlag_PosColorTex);
-
-	static_assert(sizeof(CCPoint) == sizeof(ccVertex2F), "so the cocos devs were right then");
-	
-	glVertexAttribPointer(kCCVertexAttrib_Position, 2, GL_FLOAT, GL_FALSE, 0, poli.data());
-	glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_FLOAT, GL_FALSE, 0, colors.data());
-	glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, 0, uvs.data());
-
-	glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
 }
 
 ImVec2 ImGuiCocos::cocosToFrame(const CCPoint& pos) {
@@ -166,21 +148,44 @@ void ImGuiCocos::newFrame() {
 void ImGuiCocos::renderFrame() {
 	auto* drawData = ImGui::GetDrawData();
 
-	const auto frameSize = CCDirector::sharedDirector()->getOpenGLView()->getFrameSize();
-	const auto winSize = CCDirector::sharedDirector()->getWinSize();
-	const auto frameToCocos = [&](const ImVec2 pos) {
-		return CCPoint(
-			pos.x / frameSize.width * winSize.width,
-			(1.f - pos.y / frameSize.height) * winSize.height
-		);
-	};
-
 	glEnable(GL_SCISSOR_TEST);
+
+	GLuint vao = 0;
+	GLuint vbos[2] = {0, 0};
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glGenBuffers(2, &vbos[0]);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbos[1]);
+
+	glEnableVertexAttribArray(kCCVertexAttrib_Position);
+	glVertexAttribPointer(kCCVertexAttrib_Position, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), reinterpret_cast<void*>(offsetof(ImDrawVert, pos)));
+
+	glEnableVertexAttribArray(kCCVertexAttrib_TexCoords);
+	glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), reinterpret_cast<void*>(offsetof(ImDrawVert, uv)));
+
+	glEnableVertexAttribArray(kCCVertexAttrib_Color);
+	glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), reinterpret_cast<void*>(offsetof(ImDrawVert, col)));
+
+	auto* shader = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor);
+	shader->use();
+	shader->setUniformsForBuiltins();
 
 	for (int i = 0; i < drawData->CmdListsCount; ++i) {
 		auto* list = drawData->CmdLists[i];
-		auto* idxBuffer = list->IdxBuffer.Data;
-		auto* vtxBuffer = list->VtxBuffer.Data;
+
+		// convert vertex coords to cocos space
+		for (int j = 0; j < list->VtxBuffer.size(); j++) {
+			const auto point = frameToCocos(list->VtxBuffer[j].pos);
+			list->VtxBuffer[j].pos = ImVec2(point.x, point.y);
+		}
+
+		glBufferData(GL_ARRAY_BUFFER, list->VtxBuffer.Size * sizeof(ImDrawVert), list->VtxBuffer.Data, GL_STREAM_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, list->IdxBuffer.Size * sizeof(ImDrawIdx), list->IdxBuffer.Data, GL_STREAM_DRAW);
+
 		for (auto& cmd : list->CmdBuffer) {
 			const auto textureID = reinterpret_cast<std::uintptr_t>(cmd.GetTexID());
 			ccGLBindTexture2D(static_cast<GLuint>(textureID));
@@ -194,38 +199,16 @@ void ImGuiCocos::renderFrame() {
 
 			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
 
-			for (unsigned int i = 0; i < cmd.ElemCount; i += 3) {
-				const auto a = vtxBuffer[idxBuffer[cmd.IdxOffset + i + 0]];
-				const auto b = vtxBuffer[idxBuffer[cmd.IdxOffset + i + 1]];
-				const auto c = vtxBuffer[idxBuffer[cmd.IdxOffset + i + 2]];
-				
-				const std::array<CCPoint, 3> points = {
-					frameToCocos(a.pos),
-					frameToCocos(b.pos),
-					frameToCocos(c.pos),
-				};
-
-				static constexpr auto ccc4FromImColor = [](const ImColor color) {
-					// beautiful
-					return ccc4f(color.Value.x, color.Value.y, color.Value.z, color.Value.w);
-				};
-
-				const std::array<ccColor4F, 3> colors = {
-					ccc4FromImColor(a.col),
-					ccc4FromImColor(b.col),
-					ccc4FromImColor(c.col),
-				};
-
-				const std::array<CCPoint, 3> uvs = {
-					ccp(a.uv.x, a.uv.y),
-					ccp(b.uv.x, b.uv.y),
-					ccp(c.uv.x, c.uv.y),
-				};
-
-				drawTriangle(points, colors, uvs);
-			}
+			glDrawElements(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)));
 		}
 	}
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	glDeleteBuffers(2, &vbos[0]);
+	glDeleteVertexArrays(1, &vao);
 
 	glDisable(GL_SCISSOR_TEST);
 }
