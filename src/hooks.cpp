@@ -16,37 +16,46 @@ $on_mod(Unloaded) {
 }
 
 class $modify(CCMouseDispatcher) {
-    bool dispatchScrollMSG(float y, float x) {
-        auto& io = ImGui::GetIO();
-		static constexpr float scrollMult = 1.f / 10.f;
-        io.AddMouseWheelEvent(x * scrollMult, -y * scrollMult);
+	bool dispatchScrollMSG(float y, float x) {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCMouseDispatcher::dispatchScrollMSG(y, x);
 
-        if (!io.WantCaptureMouse) {
-            return CCMouseDispatcher::dispatchScrollMSG(y, x);
-        }
-        return true;
-    }
+		auto& io = ImGui::GetIO();
+		static constexpr float scrollMult = 1.f / 10.f;
+		io.AddMouseWheelEvent(x * scrollMult, -y * scrollMult);
+
+		if (!io.WantCaptureMouse) {
+			return CCMouseDispatcher::dispatchScrollMSG(y, x);
+		}
+		return true;
+	}
 };
 
 class $modify(CCIMEDispatcher) {
-    void dispatchInsertText(const char* text, int len) {
-        auto& io = ImGui::GetIO();
-        if (!io.WantCaptureKeyboard) {
-            CCIMEDispatcher::dispatchInsertText(text, len);
-        }
-        std::string str(text, len);
-        io.AddInputCharactersUTF8(str.c_str());
-    }
+	void dispatchInsertText(const char* text, int len) {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCIMEDispatcher::dispatchInsertText(text, len);
+			
+		auto& io = ImGui::GetIO();
+		if (!io.WantCaptureKeyboard) {
+			CCIMEDispatcher::dispatchInsertText(text, len);
+		}
+		std::string str(text, len);
+		io.AddInputCharactersUTF8(str.c_str());
+	}
 
-    void dispatchDeleteBackward() {
-        auto& io = ImGui::GetIO();
-        if (!io.WantCaptureKeyboard) {
-            CCIMEDispatcher::dispatchDeleteBackward();
-        }
-        // is this really how youre supposed to do this
-        io.AddKeyEvent(ImGuiKey_Backspace, true);
-        io.AddKeyEvent(ImGuiKey_Backspace, false);
-    }
+	void dispatchDeleteBackward() {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCIMEDispatcher::dispatchDeleteBackward();
+
+		auto& io = ImGui::GetIO();
+		if (!io.WantCaptureKeyboard) {
+			CCIMEDispatcher::dispatchDeleteBackward();
+		}
+		// is this really how youre supposed to do this
+		io.AddKeyEvent(ImGuiKey_Backspace, true);
+		io.AddKeyEvent(ImGuiKey_Backspace, false);
+	}
 };
 
 ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
@@ -67,7 +76,7 @@ ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
 
 class $modify(CCKeyboardDispatcher) {
 	bool dispatchKeyboardMSG(enumKeyCodes key, bool down) {
-		if (!ImGui::GetIO().WantCaptureKeyboard) {
+		if (!ImGuiCocos::get().isInitialized() || !ImGui::GetIO().WantCaptureKeyboard) {
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down);
 		}
 		const auto imKey = cocosToImGuiKey(key);
@@ -79,16 +88,19 @@ class $modify(CCKeyboardDispatcher) {
 };
 
 class $modify(CCTouchDispatcher) {
-    void touches(CCSet* touches, CCEvent* event, unsigned int type) {
-        auto& io = ImGui::GetIO();
-        auto* touch = static_cast<CCTouch*>(touches->anyObject());
+	void touches(CCSet* touches, CCEvent* event, unsigned int type) {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCTouchDispatcher::touches(touches, event, type);
+
+		auto& io = ImGui::GetIO();
+		auto* touch = static_cast<CCTouch*>(touches->anyObject());
 		
 		if (!touch) return CCTouchDispatcher::touches(touches, event, type);
 
-        const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
-        io.AddMousePosEvent(pos.x, pos.y);
+		const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
+		io.AddMousePosEvent(pos.x, pos.y);
 
-        if (io.WantCaptureMouse) {
+		if (io.WantCaptureMouse) {
 			if (type == CCTOUCHBEGAN) {
 				io.AddMouseButtonEvent(0, true);
 			} else if (type == CCTOUCHENDED || type == CCTOUCHCANCELLED) {
@@ -97,26 +109,31 @@ class $modify(CCTouchDispatcher) {
 			if (type == CCTOUCHMOVED) {
 				CCTouchDispatcher::touches(touches, event, CCTOUCHCANCELLED);
 			}
-        } else {
-            if (type != CCTOUCHMOVED) {
-                io.AddMouseButtonEvent(0, false);
-            }
+		} else {
+			if (type != CCTOUCHMOVED) {
+				io.AddMouseButtonEvent(0, false);
+			}
 			CCTouchDispatcher::touches(touches, event, type);
 		}
-    }
+	}
 };
 
 class $modify(CCEGLView) {
-    void swapBuffers() {
-		ImGuiCocos::get().drawFrame();
-        CCEGLView::swapBuffers();
-    }
+	void swapBuffers() {
+		if (ImGuiCocos::get().isInitialized())
+			ImGuiCocos::get().drawFrame();
+			
+		CCEGLView::swapBuffers();
+	}
 
 #ifdef GEODE_IS_WINDOWS
-    void toggleFullScreen(bool value) {
-        ImGuiCocos::get().destroy();
-        CCEGLView::toggleFullScreen(value);
-        ImGuiCocos::get().setup();
-    }
+	void toggleFullScreen(bool value) {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCEGLView::toggleFullScreen(value);
+
+		ImGuiCocos::get().destroy();
+		CCEGLView::toggleFullScreen(value);
+		ImGuiCocos::get().setup();
+	}
 #endif
 };

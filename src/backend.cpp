@@ -41,6 +41,10 @@ bool ImGuiCocos::isVisible() {
 	return m_visible;
 }
 
+bool ImGuiCocos::isInitialized() {
+	return m_initialized;
+}
+
 ImGuiCocos& ImGuiCocos::setup() {
 	if (m_initialized) return *this;
 
