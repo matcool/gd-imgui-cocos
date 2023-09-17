@@ -140,8 +140,10 @@ void ImGuiCocos::newFrame() {
 	);
 	io.DeltaTime = director->getDeltaTime();
 
+#ifdef GEODE_IS_DESKTOP
 	const auto mouse = cocosToFrame(geode::cocos::getMousePos());
 	io.AddMousePosEvent(mouse.x, mouse.y);
+#endif
 
 	auto* kb = director->getKeyboardDispatcher();
 	io.KeyAlt = kb->getAltKeyPressed() || kb->getCommandKeyPressed(); // look

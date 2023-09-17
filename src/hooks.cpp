@@ -4,7 +4,6 @@
 #include <Geode/modify/CCMouseDispatcher.hpp>
 #include <Geode/modify/CCIMEDispatcher.hpp>
 #include <Geode/modify/CCTouchDispatcher.hpp>
-#include <Geode/modify/CCEGLView.hpp>
 #include <Geode/modify/CCKeyboardDispatcher.hpp>
 
 #include <imgui.h>
@@ -35,7 +34,7 @@ class $modify(CCIMEDispatcher) {
 	void dispatchInsertText(const char* text, int len) {
 		if (!ImGuiCocos::get().isInitialized())
 			return CCIMEDispatcher::dispatchInsertText(text, len);
-			
+
 		auto& io = ImGui::GetIO();
 		if (!io.WantCaptureKeyboard) {
 			CCIMEDispatcher::dispatchInsertText(text, len);
@@ -94,7 +93,7 @@ class $modify(CCTouchDispatcher) {
 
 		auto& io = ImGui::GetIO();
 		auto* touch = static_cast<CCTouch*>(touches->anyObject());
-		
+
 		if (!touch) return CCTouchDispatcher::touches(touches, event, type);
 
 		const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
@@ -118,11 +117,15 @@ class $modify(CCTouchDispatcher) {
 	}
 };
 
+#ifndef GEODE_IS_ANDROID
+
+#include <Geode/modify/CCEGLView.hpp>
+
 class $modify(CCEGLView) {
 	void swapBuffers() {
 		if (ImGuiCocos::get().isInitialized())
 			ImGuiCocos::get().drawFrame();
-			
+
 		CCEGLView::swapBuffers();
 	}
 
@@ -137,3 +140,17 @@ class $modify(CCEGLView) {
 	}
 #endif
 };
+
+#else
+
+#include <Geode/modify/CCDirector.hpp>
+
+class $modify(CCDirector) {
+	void drawScene() {
+		CCDirector::drawScene();
+		if (ImGuiCocos::get().isInitialized())
+			ImGuiCocos::get().drawFrame();
+	}
+};
+
+#endif
