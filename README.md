@@ -51,3 +51,16 @@ $on_mod(Loaded) {
 ```
 
 This code will create a floating window that will persist throughout scenes, and should always be on top of everything
+
+## random
+
+Heres how you can add your own fonts from mod resources, because i always forget. \
+Make sure that in your `mod.json` the ttf is a `file`, instead of a font! you don't want it as a gd font, you want the actual ttf file
+
+```cpp
+ImGuiCocos::get().setup([] {
+    // you should do this in setup! ok thx
+    auto* font = ImGui::GetIO().Fonts->AddFontFromFileTTF((Mod::get()->getResourcesDir() / "whatever.ttf").string().c_str(), 16.0f);
+    // do something with the font.. like io.FontDefault or something
+})//.draw(... etc
+```
