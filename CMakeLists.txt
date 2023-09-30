@@ -4,6 +4,8 @@ project(imgui-cocos)
 
 add_library(imgui-cocos INTERFACE)
 
+set_target_properties(imgui-cocos PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
 if (NOT COMMAND CPMAddPackage)
     include(cmake/CPM.cmake)
 endif()
