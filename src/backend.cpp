@@ -41,6 +41,14 @@ bool ImGuiCocos::isVisible() {
 	return m_visible;
 }
 
+void ImGuiCocos::setInputMode(InputMode mode) {
+	m_inputMode = mode;
+}
+
+ImGuiCocos::InputMode ImGuiCocos::getInputMode() {
+	return m_inputMode;
+}
+
 bool ImGuiCocos::isInitialized() {
 	return m_initialized;
 }
@@ -138,7 +146,11 @@ void ImGuiCocos::newFrame() {
 		winSize.width / frameSize.width,
 		winSize.height / frameSize.height
 	);
-	io.DeltaTime = director->getDeltaTime();
+	if (director->getDeltaTime() > 0.f) {
+		io.DeltaTime = director->getDeltaTime();
+	} else {
+		io.DeltaTime = 1.f / 60.f;
+	}
 
 #ifdef GEODE_IS_DESKTOP
 	const auto mouse = cocosToFrame(geode::cocos::getMousePos());

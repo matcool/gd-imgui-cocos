@@ -73,9 +73,14 @@ ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
 	}
 }
 
+bool shouldBlockInput() {
+	auto& inst = ImGuiCocos::get();
+	return inst.isVisible() && inst.getInputMode() == ImGuiCocos::InputMode::Blocking;
+}
+
 class $modify(CCKeyboardDispatcher) {
 	bool dispatchKeyboardMSG(enumKeyCodes key, bool down) {
-		if (!ImGuiCocos::get().isInitialized() || !ImGui::GetIO().WantCaptureKeyboard) {
+		if (!ImGuiCocos::get().isInitialized() || (!ImGui::GetIO().WantCaptureKeyboard && !shouldBlockInput())) {
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down);
 		}
 		const auto imKey = cocosToImGuiKey(key);
@@ -99,7 +104,7 @@ class $modify(CCTouchDispatcher) {
 		const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
 		io.AddMousePosEvent(pos.x, pos.y);
 
-		if (io.WantCaptureMouse) {
+		if (io.WantCaptureMouse || shouldBlockInput()) {
 			if (type == CCTOUCHBEGAN) {
 				io.AddMouseButtonEvent(0, true);
 			} else if (type == CCTOUCHENDED || type == CCTOUCHCANCELLED) {

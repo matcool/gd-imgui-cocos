@@ -6,11 +6,20 @@
 #include <imgui.h>
 
 class ImGuiCocos {
+public:
+	enum class InputMode {
+		// This is the default behavior, which will let clicks go through to gd,
+		// and keyboard inputs too as long as imgui isnt using it.
+		Default,
+		// This mode blocks any input from going through as long as imgui is toggled on.
+		Blocking,
+	};
 private:
 	cocos2d::CCTexture2D* m_fontTexture = nullptr;
 	bool m_initialized = false;
 	bool m_visible = true;
 	std::function<void()> m_setupCall, m_drawCall;
+	InputMode m_inputMode = InputMode::Default;
 
 	ImGuiCocos();
 
@@ -35,6 +44,9 @@ public:
 	void toggle();
 	bool isVisible();
 	void setVisible(bool v);
+
+	void setInputMode(InputMode mode);
+	InputMode getInputMode();
 
 	bool isInitialized();
 	
