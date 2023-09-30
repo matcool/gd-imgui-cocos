@@ -12,6 +12,22 @@ CPMAddPackage("gh:matcool/gd-imgui-cocos#commithash") # specify a commit!
 target_link_libraries(${PROJECT_NAME} imgui-cocos)
 ```
 
+You may specify what version of imgui you want to use by setting `IMGUI_VERSION` before including the library:
+
+```cmake
+set(IMGUI_VERSION "v1.70")
+CPMAddPackage("gh:matcool/gd-imgui-cocos#...")
+```
+
+Or even get imgui yourself, and setting the `HAS_IMGUI` option:
+```cmake
+add_subdirectory(my-epic-imgui)
+
+set(HAS_IMGUI ON)
+CPMAddPackage("gh:matcool/gd-imgui-cocos#...")
+```
+
+
 ## usage
 
 Make sure you call the `setup` method! Even if you don't need the callback you can use the overload with no args.
