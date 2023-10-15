@@ -93,7 +93,7 @@ class $modify(CCKeyboardDispatcher) {
 
 class $modify(CCTouchDispatcher) {
 	void touches(CCSet* touches, CCEvent* event, unsigned int type) {
-		if (!ImGuiCocos::get().isInitialized())
+		if (!ImGuiCocos::get().isInitialized() || !touches)
 			return CCTouchDispatcher::touches(touches, event, type);
 
 		auto& io = ImGui::GetIO();
