@@ -80,14 +80,21 @@ bool shouldBlockInput() {
 
 class $modify(CCKeyboardDispatcher) {
 	bool dispatchKeyboardMSG(enumKeyCodes key, bool down) {
-		if (!ImGuiCocos::get().isInitialized() || (!ImGui::GetIO().WantCaptureKeyboard && !shouldBlockInput())) {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down);
+
+		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
+		if (shouldEatInput || !down) {
+			const auto imKey = cocosToImGuiKey(key);
+			if (imKey != ImGuiKey_None) {
+				ImGui::GetIO().AddKeyEvent(imKey, down);
+			}
+		}
+		if (shouldEatInput) {
+			return false;
+		} else {
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down);
 		}
-		const auto imKey = cocosToImGuiKey(key);
-		if (imKey != ImGuiKey_None) {
-			ImGui::GetIO().AddKeyEvent(imKey, down);
-		}
-		return false;
 	}
 };
 
