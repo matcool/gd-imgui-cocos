@@ -85,7 +85,9 @@ class $modify(CCKeyboardDispatcher) {
 		}
 		const auto imKey = cocosToImGuiKey(key);
 		if (imKey != ImGuiKey_None) {
-			ImGui::GetIO().AddKeyEvent(imKey, down);
+			// im not sure why but this fixes the enter button on input
+			ImGui::GetIO().AddKeyEvent(imKey, true);
+            		ImGui::GetIO().AddKeyEvent(imKey, false);
 		}
 		return false;
 	}
