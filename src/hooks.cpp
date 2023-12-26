@@ -31,13 +31,13 @@ class $modify(CCMouseDispatcher) {
 };
 
 class $modify(CCIMEDispatcher) {
-	void dispatchInsertText(const char* text, int len) {
+	void dispatchInsertText(const char* text, int len, enumKeyCodes keys) {
 		if (!ImGuiCocos::get().isInitialized())
-			return CCIMEDispatcher::dispatchInsertText(text, len);
+			return CCIMEDispatcher::dispatchInsertText(text, len, keys);
 
 		auto& io = ImGui::GetIO();
 		if (!io.WantCaptureKeyboard) {
-			CCIMEDispatcher::dispatchInsertText(text, len);
+			CCIMEDispatcher::dispatchInsertText(text, len, keys);
 		}
 		std::string str(text, len);
 		io.AddInputCharactersUTF8(str.c_str());
@@ -79,9 +79,9 @@ bool shouldBlockInput() {
 }
 
 class $modify(CCKeyboardDispatcher) {
-	bool dispatchKeyboardMSG(enumKeyCodes key, bool down) {
+	bool dispatchKeyboardMSG(enumKeyCodes key, bool down, bool idk) {
 		if (!ImGuiCocos::get().isInitialized())
-			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down);
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down, idk);
 
 		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
 		if (shouldEatInput || !down) {
@@ -93,7 +93,7 @@ class $modify(CCKeyboardDispatcher) {
 		if (shouldEatInput) {
 			return false;
 		} else {
-			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down);
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down, idk);
 		}
 	}
 };
