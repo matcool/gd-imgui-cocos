@@ -142,12 +142,12 @@ class $modify(CCEGLView) {
 	}
 
 #ifdef GEODE_IS_WINDOWS
-	void toggleFullScreen(bool value) {
+	void toggleFullScreen(bool value, bool borderless) {
 		if (!ImGuiCocos::get().isInitialized())
-			return CCEGLView::toggleFullScreen(value);
+			return CCEGLView::toggleFullScreen(value, borderless);
 
 		ImGuiCocos::get().destroy();
-		CCEGLView::toggleFullScreen(value);
+		CCEGLView::toggleFullScreen(value, borderless);
 		ImGuiCocos::get().setup();
 	}
 #endif
