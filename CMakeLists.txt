@@ -32,11 +32,3 @@ if (NOT HAS_IMGUI)
         ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
     )
 endif()
-
-if(WIN32)
-    target_link_libraries(imgui-cocos INTERFACE opengl32)
-elseif(APPLE)
-    target_link_libraries(imgui-cocos INTERFACE "-framework OpenGL")
-elseif(ANDROID)
-    target_link_libraries(imgui-cocos INTERFACE GLESv2)
-endif()
