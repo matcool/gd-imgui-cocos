@@ -95,7 +95,7 @@ void ImGuiCocos::destroy() {
 
 ImVec2 ImGuiCocos::cocosToFrame(const CCPoint& pos) {
 	auto* director = CCDirector::sharedDirector();
-	const auto frameSize = director->getOpenGLView()->getFrameSize();
+	const auto frameSize = director->getOpenGLView()->getFrameSize() * 2.f;
 	const auto winSize = director->getWinSize();
 
 	return ImVec2(
@@ -106,7 +106,7 @@ ImVec2 ImGuiCocos::cocosToFrame(const CCPoint& pos) {
 
 CCPoint ImGuiCocos::frameToCocos(const ImVec2& pos) {
 	auto* director = CCDirector::sharedDirector();
-	const auto frameSize = director->getOpenGLView()->getFrameSize();
+	const auto frameSize = director->getOpenGLView()->getFrameSize() * 2.f;
 	const auto winSize = director->getWinSize();
 
 	return CCPoint(
@@ -138,7 +138,7 @@ void ImGuiCocos::newFrame() {
 	// opengl2 new frame
 	auto* director = CCDirector::sharedDirector();
 	const auto winSize = director->getWinSize();
-	const auto frameSize = director->getOpenGLView()->getFrameSize();
+	const auto frameSize = director->getOpenGLView()->getFrameSize() * 2.f;
 
 	// glfw new frame
 	io.DisplaySize = ImVec2(frameSize.width, frameSize.height);
