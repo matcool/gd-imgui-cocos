@@ -9,6 +9,7 @@ set_target_properties(imgui-cocos PROPERTIES CXX_VISIBILITY_PRESET hidden)
 target_sources(imgui-cocos INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/backend.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hooks.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/retina.mm
 )
 
 option(HAS_IMGUI "If imgui is already provided externally" OFF)
