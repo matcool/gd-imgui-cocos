@@ -129,7 +129,7 @@ class $modify(CCTouchDispatcher) {
 	}
 };
 
-#ifndef GEODE_IS_ANDROID
+#ifdef GEODE_IS_WINDOWS
 
 #include <Geode/modify/CCEGLView.hpp>
 
@@ -141,7 +141,6 @@ class $modify(CCEGLView) {
 		CCEGLView::swapBuffers();
 	}
 
-#ifdef GEODE_IS_WINDOWS
 	void toggleFullScreen(bool value, bool borderless) {
 		if (!ImGuiCocos::get().isInitialized())
 			return CCEGLView::toggleFullScreen(value, borderless);
@@ -150,7 +149,6 @@ class $modify(CCEGLView) {
 		CCEGLView::toggleFullScreen(value, borderless);
 		ImGuiCocos::get().setup();
 	}
-#endif
 };
 
 #else
