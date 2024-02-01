@@ -12,7 +12,7 @@ target_sources(imgui-cocos INTERFACE
 )
 
 if (APPLE)
-    target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/retina.mm)
+    target_sources(imgui-cocos INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/retina.mm)
     set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/retina.mm PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 endif()
 
