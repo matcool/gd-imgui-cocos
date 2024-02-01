@@ -6,12 +6,11 @@
 #import "Cocoa/Cocoa.h"
 #undef CommentType
 
-float ImGuiCocos::retinaCheck() {
+float ImGuiCocos::retinaFactor() {
     float displayScale = 1.f;
     if ([[NSScreen mainScreen] respondsToSelector:@selector(backingScaleFactor)]) {
-        NSArray *screens = [NSScreen screens];
-        NSUInteger screenCount = screens.count;
-        for (int i = 0; i < screenCount; i++) {
+        NSArray* screens = [NSScreen screens];
+        for (int i = 0; i < screens.count; i++) {
             float s = [screens[i] backingScaleFactor];
             if (s > displayScale)
                 displayScale = s;
