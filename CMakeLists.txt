@@ -11,7 +11,7 @@ target_sources(imgui-cocos INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hooks.cpp
 )
 
-target_include_directories(imgui-cocos INTERFACE ${imgui_SOURCE_DIR} include)
+target_include_directories(imgui-cocos INTERFACE include)
 
 if (APPLE)
     target_sources(imgui-cocos INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/retina.mm)
@@ -27,6 +27,8 @@ if (NOT HAS_IMGUI)
     endif()
 
     CPMAddPackage("gh:ocornut/imgui#${IMGUI_VERSION}")
+
+    target_include_directories(imgui-cocos INTERFACE ${imgui_SOURCE_DIR})
 
     target_sources(imgui-cocos INTERFACE
         ${imgui_SOURCE_DIR}/imgui.cpp
