@@ -213,9 +213,9 @@ void ImGuiCocos::renderFrame() {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, list->IdxBuffer.Size * sizeof(ImDrawIdx), list->IdxBuffer.Data, GL_STREAM_DRAW);
 
 		for (auto& cmd : list->CmdBuffer) {
-			if(cmd->UserCallback != nullptr)
+			if(cmd.UserCallback != nullptr)
 			{
-				cmd->UserCallback(list, cmd);
+				cmd.UserCallback(list, cmd);
 			}
 			else
 			{
