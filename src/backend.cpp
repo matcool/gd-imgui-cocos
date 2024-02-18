@@ -215,14 +215,7 @@ void ImGuiCocos::renderFrame() {
 		for (auto& cmd : list->CmdBuffer) {
 			if(cmd.UserCallback != nullptr)
 			{
-				if (cmd.UserCallback == ImDrawCallback_ResetRenderState)
-				{
-                    auto* shader = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor);
-					shader->use();
-					shader->setUniformsForBuiltins();
-				}
-                else
-                    cmd.UserCallback(list, &cmd);
+				cmd.UserCallback(list, &cmd);
 			}
 			else
 			{
