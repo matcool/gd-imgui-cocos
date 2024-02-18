@@ -213,12 +213,9 @@ void ImGuiCocos::renderFrame() {
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, list->IdxBuffer.Size * sizeof(ImDrawIdx), list->IdxBuffer.Data, GL_STREAM_DRAW);
 
 		for (auto& cmd : list->CmdBuffer) {
-			if(cmd.UserCallback != nullptr)
-			{
+			if (cmd.UserCallback != nullptr) {
 				cmd.UserCallback(list, &cmd);
-			}
-			else
-			{
+			} else {
 				const auto textureID = reinterpret_cast<std::uintptr_t>(cmd.GetTexID());
 				ccGLBindTexture2D(static_cast<GLuint>(textureID));
 
