@@ -215,21 +215,22 @@ void ImGuiCocos::renderFrame() {
 		for (auto& cmd : list->CmdBuffer) {
 			if (cmd.UserCallback != nullptr) {
 				cmd.UserCallback(list, &cmd);
-			} else {
-				const auto textureID = reinterpret_cast<std::uintptr_t>(cmd.GetTexID());
-				ccGLBindTexture2D(static_cast<GLuint>(textureID));
-
-				const auto rect = cmd.ClipRect;
-				const auto orig = frameToCocos(ImVec2(rect.x, rect.y));
-				const auto end = frameToCocos(ImVec2(rect.z, rect.w));
-
-				if (end.x <= orig.x || end.y >= orig.y)
-					continue;
-
-				CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
-
-				glDrawElements(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)));
+				continue;
 			}
+			
+			const auto textureID = reinterpret_cast<std::uintptr_t>(cmd.GetTexID());
+			ccGLBindTexture2D(static_cast<GLuint>(textureID));
+
+			const auto rect = cmd.ClipRect;
+			const auto orig = frameToCocos(ImVec2(rect.x, rect.y));
+			const auto end = frameToCocos(ImVec2(rect.z, rect.w));
+
+			if (end.x <= orig.x || end.y >= orig.y)
+				continue;
+
+			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
+
+			glDrawElements(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)));
 		}
 	}
 
