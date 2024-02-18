@@ -215,7 +215,7 @@ void ImGuiCocos::renderFrame() {
 		for (auto& cmd : list->CmdBuffer) {
 			if(cmd.UserCallback != nullptr)
 			{
-				cmd.UserCallback(list, cmd);
+				cmd.UserCallback(list, &cmd);
 			}
 			else
 			{
