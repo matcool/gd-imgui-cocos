@@ -93,6 +93,10 @@ void ImGuiCocos::destroy() {
 	m_initialized = false;
 }
 
+void ImGuiCocos::reload() {
+	m_reloading = true;
+}
+
 #ifndef GEODE_IS_MACOS
 
 float ImGuiCocos::retinaFactor() {
@@ -127,7 +131,7 @@ void ImGuiCocos::drawFrame() {
 	if (!m_initialized || !m_visible) return;
 
 	ccGLBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
+
 	// starts a new frame for imgui
 	this->newFrame();
 	ImGui::NewFrame();
@@ -138,6 +142,13 @@ void ImGuiCocos::drawFrame() {
 	// renders the triangles onto the screen
 	ImGui::Render();
 	this->renderFrame();
+
+	// reload imgui context if requested
+	if (m_reloading) {
+		this->destroy();
+		this->setup();
+		m_reloading = false;
+	}
 }
 
 void ImGuiCocos::newFrame() {

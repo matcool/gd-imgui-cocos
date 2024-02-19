@@ -18,6 +18,7 @@ private:
 	cocos2d::CCTexture2D* m_fontTexture = nullptr;
 	bool m_initialized = false;
 	bool m_visible = true;
+	bool m_reloading = false;
 	std::function<void()> m_setupCall, m_drawCall;
 	InputMode m_inputMode = InputMode::Default;
 
@@ -40,6 +41,9 @@ public:
 	ImGuiCocos& setup();
 
 	ImGuiCocos& draw(std::function<void()> fun);
+
+	// used to reinitialize imgui context
+	void reload();
 
 	void toggle();
 	bool isVisible();
