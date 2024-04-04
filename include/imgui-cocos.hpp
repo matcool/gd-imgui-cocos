@@ -9,7 +9,7 @@ class ImGuiCocos {
 public:
 	enum class InputMode {
 		// This is the default behavior, which will let clicks go through to gd,
-		// and keyboard inputs too as long as imgui isnt using it.
+		// and keyboard inputs too as long as imgui isn't using it.
 		Default,
 		// This mode blocks any input from going through as long as imgui is toggled on.
 		Blocking,
@@ -24,8 +24,8 @@ private:
 
 	ImGuiCocos();
 
-	void newFrame();
-	void renderFrame();
+	static void newFrame();
+	void renderFrame() const;
 public:
 	ImGuiCocos(const ImGuiCocos&) = delete;
 	ImGuiCocos(ImGuiCocos&&) = delete;
@@ -46,13 +46,13 @@ public:
 	void reload();
 
 	void toggle();
-	bool isVisible();
+	[[nodiscard]] bool isVisible() const;
 	void setVisible(bool v);
 
 	void setInputMode(InputMode mode);
 	InputMode getInputMode();
 
-	bool isInitialized();
+	[[nodiscard]] bool isInitialized() const;
 	
 	static ImVec2 cocosToFrame(const cocos2d::CCPoint& pos);
 	static cocos2d::CCPoint frameToCocos(const ImVec2& pos);
