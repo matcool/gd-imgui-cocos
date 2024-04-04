@@ -50,6 +50,14 @@ ImGuiCocos::InputMode ImGuiCocos::getInputMode() {
 	return m_inputMode;
 }
 
+void ImGuiCocos::setForceLegacy(bool force) {
+	m_forceLegacy = force;
+}
+
+bool ImGuiCocos::getForceLegacy() const {
+	return m_forceLegacy;
+}
+
 bool ImGuiCocos::isInitialized() const {
 	return m_initialized;
 }
@@ -183,7 +191,87 @@ void ImGuiCocos::newFrame() {
 	io.KeyShift = kb->getShiftKeyPressed();
 }
 
+static bool hasExtension(const std::string& ext) {
+	auto exts = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+	if (exts == nullptr)
+		return false;
+
+	return std::string(exts).find(ext) != std::string::npos;
+}
+
+static void drawTriangle(const std::array<CCPoint, 3>& poly, const std::array<ccColor4F, 3>& colors, const std::array<CCPoint, 3>& uvs) {
+	auto* shader = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor);
+	shader->use();
+	shader->setUniformsForBuiltins();
+
+	ccGLEnableVertexAttribs(kCCVertexAttribFlag_PosColorTex);
+
+	static_assert(sizeof(CCPoint) == sizeof(ccVertex2F), "so the cocos devs were right then");
+
+	glVertexAttribPointer(kCCVertexAttrib_Position, 2, GL_FLOAT, GL_FALSE, 0, poly.data());
+	glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_FLOAT, GL_FALSE, 0, colors.data());
+	glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, 0, uvs.data());
+
+	glDrawArrays(GL_TRIANGLE_FAN, 0, 3);
+}
+
+void ImGuiCocos::legacyRenderFrame() {
+	glEnable(GL_SCISSOR_TEST);
+
+	auto* drawData = ImGui::GetDrawData();
+
+	for (int i = 0; i < drawData->CmdListsCount; ++i) {
+		auto* list = drawData->CmdLists[i];
+		auto* idxBuffer = list->IdxBuffer.Data;
+		auto* vtxBuffer = list->VtxBuffer.Data;
+		for (auto& cmd : list->CmdBuffer) {
+			ccGLBindTexture2D(static_cast<GLuint>(reinterpret_cast<intptr_t>(cmd.GetTexID())));
+
+			const auto rect = cmd.ClipRect;
+			const auto orig = frameToCocos(ImVec2(rect.x, rect.y));
+			const auto end = frameToCocos(ImVec2(rect.z, rect.w));
+			if (end.x <= orig.x || end.y >= orig.y)
+				continue;
+			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
+
+			for (unsigned int j = 0; j < cmd.ElemCount; j += 3) {
+				const auto a = vtxBuffer[idxBuffer[cmd.IdxOffset + j + 0]];
+				const auto b = vtxBuffer[idxBuffer[cmd.IdxOffset + j + 1]];
+				const auto c = vtxBuffer[idxBuffer[cmd.IdxOffset + j + 2]];
+				std::array<CCPoint, 3> points = {
+					frameToCocos(a.pos),
+					frameToCocos(b.pos),
+					frameToCocos(c.pos),
+				};
+				static constexpr auto ccc4FromImColor = [](const ImColor color) {
+					// beautiful
+					return ccc4f(color.Value.x, color.Value.y, color.Value.z, color.Value.w);
+				};
+				std::array<ccColor4F, 3> colors = {
+					ccc4FromImColor(a.col),
+					ccc4FromImColor(b.col),
+					ccc4FromImColor(c.col),
+				};
+
+				std::array<CCPoint, 3> uvs = {
+					ccp(a.uv.x, a.uv.y),
+					ccp(b.uv.x, b.uv.y),
+					ccp(c.uv.x, c.uv.y),
+				};
+
+				drawTriangle(points, colors, uvs);
+			}
+		}
+	}
+
+	glDisable(GL_SCISSOR_TEST);
+}
+
 void ImGuiCocos::renderFrame() const {
+	static bool hasVAO = hasExtension("GL_ARB_vertex_array_object");
+	if (!hasVAO || m_forceLegacy)
+		return legacyRenderFrame();
+
 	auto* drawData = ImGui::GetDrawData();
 
 	glEnable(GL_SCISSOR_TEST);

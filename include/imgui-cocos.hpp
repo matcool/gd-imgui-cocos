@@ -19,6 +19,7 @@ private:
 	bool m_initialized = false;
 	bool m_visible = true;
 	bool m_reloading = false;
+	bool m_forceLegacy = false;
 	std::function<void()> m_setupCall, m_drawCall;
 	InputMode m_inputMode = InputMode::Default;
 
@@ -26,6 +27,7 @@ private:
 
 	static void newFrame();
 	void renderFrame() const;
+	static void legacyRenderFrame(); // uses OpenGL 2.0 for rendering, for compatibility with older devices
 public:
 	ImGuiCocos(const ImGuiCocos&) = delete;
 	ImGuiCocos(ImGuiCocos&&) = delete;
@@ -51,6 +53,9 @@ public:
 
 	void setInputMode(InputMode mode);
 	InputMode getInputMode();
+
+	void setForceLegacy(bool force);
+	[[nodiscard]] bool getForceLegacy() const;
 
 	[[nodiscard]] bool isInitialized() const;
 	
