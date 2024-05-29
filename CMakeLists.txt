@@ -13,11 +13,6 @@ target_sources(imgui-cocos INTERFACE
 
 target_include_directories(imgui-cocos INTERFACE include)
 
-if (APPLE)
-    target_sources(imgui-cocos INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src/retina.mm)
-    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/retina.mm PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
-endif()
-
 option(HAS_IMGUI "If imgui is already provided externally" OFF)
 set(IMGUI_VERSION "v1.88" CACHE STRING "What imgui version to download and use")
 

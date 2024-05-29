@@ -106,17 +106,9 @@ void ImGuiCocos::reload() {
 	m_reloading = true;
 }
 
-#ifndef GEODE_IS_MACOS
-
-float ImGuiCocos::retinaFactor() {
-	return 1.f;
-}
-
-#endif
-
 ImVec2 ImGuiCocos::cocosToFrame(const CCPoint& pos) {
 	auto* director = CCDirector::sharedDirector();
-	const auto frameSize = director->getOpenGLView()->getFrameSize() * ImGuiCocos::retinaFactor();
+	const auto frameSize = director->getOpenGLView()->getFrameSize() * geode::utils::getDisplayFactor();
 	const auto winSize = director->getWinSize();
 
 	return {
@@ -127,7 +119,7 @@ ImVec2 ImGuiCocos::cocosToFrame(const CCPoint& pos) {
 
 CCPoint ImGuiCocos::frameToCocos(const ImVec2& pos) {
 	auto* director = CCDirector::sharedDirector();
-	const auto frameSize = director->getOpenGLView()->getFrameSize() * ImGuiCocos::retinaFactor();
+	const auto frameSize = director->getOpenGLView()->getFrameSize() * geode::utils::getDisplayFactor();
 	const auto winSize = director->getWinSize();
 
 	return {
@@ -166,7 +158,7 @@ void ImGuiCocos::newFrame() {
 	// opengl2 new frame
 	auto* director = CCDirector::sharedDirector();
 	const auto winSize = director->getWinSize();
-	const auto frameSize = director->getOpenGLView()->getFrameSize() * ImGuiCocos::retinaFactor();
+	const auto frameSize = director->getOpenGLView()->getFrameSize() * geode::utils::getDisplayFactor();
 
 	// glfw new frame
 	io.DisplaySize = ImVec2(frameSize.width, frameSize.height);
