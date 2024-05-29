@@ -142,7 +142,7 @@ void ImGuiCocos::drawFrame() {
 	ccGLBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// starts a new frame for imgui
-	ImGuiCocos::newFrame();
+	this->newFrame();
 	ImGui::NewFrame();
 
 	// actually draws stuff with imgui functions
