@@ -304,7 +304,7 @@ void ImGuiCocos::renderFrame() const {
 		auto* list = drawData->CmdLists[i];
 
 		// convert vertex coords to cocos space
-		for (auto &j : list->VtxBuffer) {
+		for (auto& j : list->VtxBuffer) {
 			const auto point = frameToCocos(j.pos);
 			j.pos = ImVec2(point.x, point.y);
 		}
