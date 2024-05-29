@@ -61,5 +61,4 @@ public:
 	
 	static ImVec2 cocosToFrame(const cocos2d::CCPoint& pos);
 	static cocos2d::CCPoint frameToCocos(const ImVec2& pos);
-	static float retinaFactor();
 };
