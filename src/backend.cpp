@@ -69,8 +69,24 @@ ImGuiCocos& ImGuiCocos::setup() {
 
 	auto& io = ImGui::GetIO();
 
+	int glVersion = [] {
+		int major = 0;
+		int minor = 0;
+		glGetIntegerv(GL_MAJOR_VERSION, &major);
+		glGetIntegerv(GL_MINOR_VERSION, &minor);
+		if (major == 0 && minor == 0) {
+			// opengl version is too old to even support GL_MAJOR_VERSION
+			return 100;
+		} else {
+			return major * 100 + minor * 10;
+		}
+	}();
+
 	io.BackendPlatformName = "gd-imgui-cocos + Geode";
 	io.BackendPlatformUserData = this;
+	if (glVersion >= 320) {
+		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+	}
 
 	// use static since imgui does not own the pointer!
 	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
@@ -184,7 +200,7 @@ void ImGuiCocos::newFrame() {
 }
 
 static bool hasExtension(const std::string& ext) {
-	auto exts = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+	static auto exts = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
 	if (exts == nullptr)
 		return false;
 
@@ -266,6 +282,8 @@ void ImGuiCocos::renderFrame() const {
 
 	auto* drawData = ImGui::GetDrawData();
 
+	const bool hasVtxOffset = ImGui::GetIO().BackendFlags | ImGuiBackendFlags_RendererHasVtxOffset;
+
 	glEnable(GL_SCISSOR_TEST);
 
 	GLuint vao = 0;
@@ -322,7 +340,11 @@ void ImGuiCocos::renderFrame() const {
 
 			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
 
-			glDrawElements(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)));
+			if (hasVtxOffset) {
+				glDrawElementsBaseVertex(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)), cmd.VtxOffset);
+			} else {
+				glDrawElements(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)));
+			}
 		}
 	}
 
