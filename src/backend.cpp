@@ -276,7 +276,11 @@ void ImGuiCocos::legacyRenderFrame() {
 }
 
 void ImGuiCocos::renderFrame() const {
+#ifdef GEODE_IS_MACOS
+	static bool hasVAO = hasExtension("GL_APPLE_vertex_array_object");
+#else
 	static bool hasVAO = hasExtension("GL_ARB_vertex_array_object");
+#endif
 	if (!hasVAO || m_forceLegacy)
 		return legacyRenderFrame();
 
