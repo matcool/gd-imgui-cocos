@@ -69,17 +69,26 @@ ImGuiCocos& ImGuiCocos::setup() {
 
 	auto& io = ImGui::GetIO();
 
-	int glVersion = [] {
+	static const int glVersion = [] {
+	#if defined(GEODE_IS_ANDROID)
+		// android uses GLES v2
+		return 200;
+	#endif
 		int major = 0;
 		int minor = 0;
+	#if defined(GEODE_IS_WINDOWS)
+		// macos opengl is really outdated, and doesnt have these enums
 		glGetIntegerv(GL_MAJOR_VERSION, &major);
 		glGetIntegerv(GL_MINOR_VERSION, &minor);
+	#endif
 		if (major == 0 && minor == 0) {
-			// opengl version is too old to even support GL_MAJOR_VERSION
-			return 100;
-		} else {
-			return major * 100 + minor * 10;
+			auto* verStr = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+			if (sscanf(verStr, "%d.%d", &major, &minor) != 2) {
+				// failed to parse version string, just assume opengl 2.1
+				return 210;
+			}
 		}
+		return major * 100 + minor * 10;
 	}();
 
 	io.BackendPlatformName = "gd-imgui-cocos + Geode";
@@ -345,7 +354,9 @@ void ImGuiCocos::renderFrame() const {
 			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
 
 			if (hasVtxOffset) {
+			#if !defined(GEODE_IS_ANDROID)
 				glDrawElementsBaseVertex(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)), cmd.VtxOffset);
+			#endif
 			} else {
 				glDrawElements(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)));
 			}
