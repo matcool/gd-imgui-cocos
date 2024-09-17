@@ -3,6 +3,11 @@
 #include <imgui-cocos.hpp>
 #include <utility>
 
+#ifdef GEODE_IS_WINDOWS
+	// so msvc shuts up
+	#define sscanf sscanf_s
+#endif
+
 using namespace geode::prelude;
 
 ImGuiCocos& ImGuiCocos::get() {
