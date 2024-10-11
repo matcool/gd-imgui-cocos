@@ -69,6 +69,10 @@ ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
 		case KEY_Alt: return ImGuiKey_ModAlt;
 		case KEY_Enter: return ImGuiKey_Enter;
 
+		case KEY_Home: return ImGuiKey_Home;
+		case KEY_End: return ImGuiKey_End;
+		case KEY_Delete: return ImGuiKey_Delete;
+
 		default: return ImGuiKey_None;
 	}
 }
