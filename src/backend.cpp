@@ -88,7 +88,7 @@ ImGuiCocos& ImGuiCocos::setup() {
 	#endif
 		if (major == 0 && minor == 0) {
 			auto* verStr = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-			if (sscanf(verStr, "%d.%d", &major, &minor) != 2) {
+			if (!verStr || sscanf(verStr, "%d.%d", &major, &minor) != 2) {
 				// failed to parse version string, just assume opengl 2.1
 				return 210;
 			}
