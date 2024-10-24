@@ -247,7 +247,7 @@ void ImGuiCocos::legacyRenderFrame() {
 		auto* idxBuffer = list->IdxBuffer.Data;
 		auto* vtxBuffer = list->VtxBuffer.Data;
 		for (auto& cmd : list->CmdBuffer) {
-			ccGLBindTexture2D(static_cast<GLuint>(reinterpret_cast<intptr_t>(cmd.GetTexID())));
+			ccGLBindTexture2D(static_cast<GLuint>(std::bit_cast<intptr_t>(cmd.GetTexID())));
 
 			const auto rect = cmd.ClipRect;
 			const auto orig = frameToCocos(ImVec2(rect.x, rect.y));

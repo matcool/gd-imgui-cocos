@@ -59,10 +59,10 @@ class $modify(CCIMEDispatcher) {
 
 ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
 	if (key >= KEY_A && key <= KEY_Z) {
-		return ImGuiKey_A + (key - KEY_A);
+		return static_cast<ImGuiKey>(ImGuiKey_A + (key - KEY_A));
 	}
 	if (key >= KEY_Zero && key <= KEY_Nine) {
-		return ImGuiKey_0 + (key - KEY_Zero);
+		return static_cast<ImGuiKey>(ImGuiKey_0 + (key - KEY_Zero));
 	}
 	switch (key) {
 		case KEY_Up: return ImGuiKey_UpArrow;

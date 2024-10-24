@@ -14,7 +14,7 @@ target_sources(imgui-cocos INTERFACE
 target_include_directories(imgui-cocos INTERFACE include)
 
 option(HAS_IMGUI "If imgui is already provided externally" OFF)
-set(IMGUI_VERSION "v1.88" CACHE STRING "What imgui version to download and use")
+set(IMGUI_VERSION "v1.91.4" CACHE STRING "What imgui version to download and use")
 
 if (NOT HAS_IMGUI)
     if (NOT COMMAND CPMAddPackage)
