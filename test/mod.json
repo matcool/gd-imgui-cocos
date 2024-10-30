@@ -1,0 +1,14 @@
+{
+	"geode": "3.8.1",
+	"gd": {
+		"win": "2.206",
+		"android": "2.206",
+		"mac": "2.206",
+		"ios": "2.206"
+	},
+	"id": "mat.test-imgui",
+	"name": "test-imgui",
+	"version": "1.0.0",
+	"developer": "mat",
+	"description": "t"
+}
