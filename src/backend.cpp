@@ -366,7 +366,7 @@ void ImGuiCocos::legacyRenderFrame() const {
 }
 
 void ImGuiCocos::renderFrame() const {
-#ifdef GEODE_IS_MACOS
+#if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
 	static bool hasVAO = hasExtension("GL_APPLE_vertex_array_object");
 #else
 	static bool hasVAO = hasExtension("GL_ARB_vertex_array_object");
@@ -434,7 +434,7 @@ void ImGuiCocos::renderFrame() const {
 			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
 
 			if (hasVtxOffset) {
-			#if !defined(GEODE_IS_ANDROID)
+			#ifndef GEODE_IS_MOBILE
 				glDrawElementsBaseVertex(GL_TRIANGLES, cmd.ElemCount, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(cmd.IdxOffset * sizeof(ImDrawIdx)), cmd.VtxOffset);
 			#endif
 			} else {
