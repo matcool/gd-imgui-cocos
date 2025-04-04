@@ -152,7 +152,7 @@ class $modify(CCTouchDispatcher) {
 	}
 };
 
-#ifdef GEODE_IS_WINDOWS
+#if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_IOS) || defined(GEODE_IS_MACOS)
 
 #include <Geode/modify/CCEGLView.hpp>
 
@@ -164,6 +164,7 @@ class $modify(CCEGLView) {
 		CCEGLView::swapBuffers();
 	}
 
+	#ifdef GEODE_IS_WINDOWS
 	void toggleFullScreen(bool value IF_2_2(, bool borderless) IF_2_207(, bool fix)) {
 		if (!ImGuiCocos::get().isInitialized())
 			return CCEGLView::toggleFullScreen(value IF_2_2(, borderless) IF_2_207(, fix));
@@ -172,6 +173,7 @@ class $modify(CCEGLView) {
 		CCEGLView::toggleFullScreen(value IF_2_2(, borderless) IF_2_207(, fix));
 		ImGuiCocos::get().setup();
 	}
+	#endif
 };
 
 #else
