@@ -11,6 +11,10 @@ target_sources(imgui-cocos INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/hooks.cpp
 )
 
+if (PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(test)
+endif()
+
 target_include_directories(imgui-cocos INTERFACE include)
 
 option(HAS_IMGUI "If imgui is already provided externally" OFF)
