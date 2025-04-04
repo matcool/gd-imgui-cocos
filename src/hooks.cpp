@@ -152,7 +152,7 @@ class $modify(CCTouchDispatcher) {
 	}
 };
 
-#if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_IOS) || defined(GEODE_IS_MACOS)
+#ifndef GEODE_IS_ANDROID
 
 #include <Geode/modify/CCEGLView.hpp>
 
