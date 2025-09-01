@@ -132,12 +132,15 @@ class $modify(CCTouchDispatcher) {
 		if (!touch) return CCTouchDispatcher::touches(touches, event, type);
 
 		const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
+        io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
 		io.AddMousePosEvent(pos.x, pos.y);
 
 		if (io.WantCaptureMouse || shouldBlockInput()) {
 			if (type == CCTOUCHBEGAN) {
+        		io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
 				io.AddMouseButtonEvent(0, true);
 			} else if (type == CCTOUCHENDED || type == CCTOUCHCANCELLED) {
+        		io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
 				io.AddMouseButtonEvent(0, false);
 			}
 			if (type == CCTOUCHMOVED) {
@@ -145,6 +148,7 @@ class $modify(CCTouchDispatcher) {
 			}
 		} else {
 			if (type != CCTOUCHMOVED) {
+        		io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
 				io.AddMouseButtonEvent(0, false);
 			}
 			CCTouchDispatcher::touches(touches, event, type);
