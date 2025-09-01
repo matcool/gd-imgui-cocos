@@ -6,6 +6,7 @@ $on_mod(Loaded) {
 		ImGui::StyleColorsLight();
 	}).draw([] {
 		ImGui::ShowDemoWindow();
+		ImGui::ShowMetricsWindow();
 	});
 }
 

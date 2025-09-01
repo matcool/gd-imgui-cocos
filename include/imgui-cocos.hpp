@@ -62,4 +62,14 @@ public:
 	
 	static ImVec2 cocosToFrame(const cocos2d::CCPoint& pos);
 	static cocos2d::CCPoint frameToCocos(const ImVec2& pos);
+
+	// Extended drawing calls list
+private:
+	std::unordered_map<std::string, std::function<void()>> m_strMappedDrawings = {};
+	std::unordered_map<int, std::function<void()>>         m_intMappedDrawings = {};
+	std::vector<std::function<void()>>                     m_nextDrawings = {};
+public:
+	auto& strMappedDrawings() { return m_strMappedDrawings; } // Map of string to drawing call (like IDs)
+	auto& intMappedDrawings() { return m_intMappedDrawings; } // Map of int to  call (like Tags)
+	auto& nextDrawings() { return m_nextDrawings; } // Will be cleared after execution on next frame
 };

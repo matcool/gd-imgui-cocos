@@ -281,11 +281,11 @@ void ImGuiCocos::newFrame() {
 		io.DeltaTime = 1.f / 60.f;
 	}
 
-#ifdef GEODE_IS_DESKTOP
-	const auto mouse = cocosToFrame(geode::cocos::getMousePos());
-    io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
-	io.AddMousePosEvent(mouse.x, mouse.y);
-#endif
+	if (auto pos = geode::cocos::getMousePos(); !pos.isZero()) {
+		const auto mouse = cocosToFrame(pos);
+		io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+		io.AddMousePosEvent(mouse.x, mouse.y);
+	}
 
 	auto* kb = director->getKeyboardDispatcher();
 	io.KeyAlt = kb->getAltKeyPressed() || kb->getCommandKeyPressed(); // look

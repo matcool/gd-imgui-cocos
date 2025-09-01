@@ -1,46 +1,59 @@
 #include <imgui-cocos.hpp>
 
 #include <Geode/Geode.hpp>
-#include <Geode/modify/CCMouseDispatcher.hpp>
-#include <Geode/modify/CCIMEDispatcher.hpp>
-#include <Geode/modify/CCTouchDispatcher.hpp>
-#include <Geode/modify/CCKeyboardDispatcher.hpp>
-
-#include <imgui.h>
-
 using namespace geode::prelude;
-
-#ifndef GEODE_IS_IOS
-class $modify(CCMouseDispatcher) {
-	bool dispatchScrollMSG(float y, float x) {
-		if (!ImGuiCocos::get().isInitialized())
-			return CCMouseDispatcher::dispatchScrollMSG(y, x);
-
-		auto& io = ImGui::GetIO();
-		static constexpr float scrollMult = 1.f / 10.f;
-		io.AddMouseWheelEvent(x * scrollMult, -y * scrollMult);
-
-		if (!io.WantCaptureMouse) {
-			return CCMouseDispatcher::dispatchScrollMSG(y, x);
-		}
-		return true;
-	}
-};
-#endif
 
 // 2.2 adds some new arguments to the dispatchers
 #if GEODE_COMP_GD_VERSION >= 22000
-	#define IF_2_2(...) __VA_ARGS__
+#define IF_2_2(...) __VA_ARGS__
 #else
-	#define IF_2_2(...)
+#define IF_2_2(...)
 #endif
 
 #if GEODE_COMP_GD_VERSION >= 22070
-	#define IF_2_207(...) __VA_ARGS__
+#define IF_2_207(...) __VA_ARGS__
 #else
-	#define IF_2_207(...)
+#define IF_2_207(...)
 #endif
 
+/*
+
+	Keyboard events
+
+*/
+
+ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
+	if (key >= KEY_A && key <= KEY_Z) {
+		return static_cast<ImGuiKey>(ImGuiKey_A + (key - KEY_A));
+	}
+	if (key >= KEY_Zero && key <= KEY_Nine) {
+		return static_cast<ImGuiKey>(ImGuiKey_0 + (key - KEY_Zero));
+	}
+	switch (key) {
+	case KEY_Up: return ImGuiKey_UpArrow;
+	case KEY_Down: return ImGuiKey_DownArrow;
+	case KEY_Left: return ImGuiKey_LeftArrow;
+	case KEY_Right: return ImGuiKey_RightArrow;
+
+	case KEY_Control: return ImGuiKey_ModCtrl;
+	case KEY_Shift: return ImGuiKey_ModShift;
+	case KEY_Alt: return ImGuiKey_ModAlt;
+	case KEY_Enter: return ImGuiKey_Enter;
+
+	case KEY_Home: return ImGuiKey_Home;
+	case KEY_End: return ImGuiKey_End;
+	case KEY_Delete: return ImGuiKey_Delete;
+
+	default: return ImGuiKey_None;
+	}
+}
+
+bool shouldBlockInput() {
+	auto& inst = ImGuiCocos::get();
+	return inst.isVisible() && inst.getInputMode() == ImGuiCocos::InputMode::Blocking;
+}
+
+#include <Geode/modify/CCIMEDispatcher.hpp>
 class $modify(CCIMEDispatcher) {
 	void dispatchInsertText(const char* text, int len IF_2_2(, enumKeyCodes keys)) {
 		if (!ImGuiCocos::get().isInitialized())
@@ -50,6 +63,7 @@ class $modify(CCIMEDispatcher) {
 		if (!io.WantCaptureKeyboard) {
 			CCIMEDispatcher::dispatchInsertText(text, len IF_2_2(, keys));
 		}
+
 		std::string str(text, len);
 		io.AddInputCharactersUTF8(str.c_str());
 	}
@@ -68,45 +82,15 @@ class $modify(CCIMEDispatcher) {
 	}
 };
 
-ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
-	if (key >= KEY_A && key <= KEY_Z) {
-		return static_cast<ImGuiKey>(ImGuiKey_A + (key - KEY_A));
-	}
-	if (key >= KEY_Zero && key <= KEY_Nine) {
-		return static_cast<ImGuiKey>(ImGuiKey_0 + (key - KEY_Zero));
-	}
-	switch (key) {
-		case KEY_Up: return ImGuiKey_UpArrow;
-		case KEY_Down: return ImGuiKey_DownArrow;
-		case KEY_Left: return ImGuiKey_LeftArrow;
-		case KEY_Right: return ImGuiKey_RightArrow;
-
-		case KEY_Control: return ImGuiKey_ModCtrl;
-		case KEY_Shift: return ImGuiKey_ModShift;
-		case KEY_Alt: return ImGuiKey_ModAlt;
-		case KEY_Enter: return ImGuiKey_Enter;
-
-		case KEY_Home: return ImGuiKey_Home;
-		case KEY_End: return ImGuiKey_End;
-		case KEY_Delete: return ImGuiKey_Delete;
-
-		default: return ImGuiKey_None;
-	}
-}
-
-bool shouldBlockInput() {
-	auto& inst = ImGuiCocos::get();
-	return inst.isVisible() && inst.getInputMode() == ImGuiCocos::InputMode::Blocking;
-}
-
 #ifndef GEODE_IS_IOS
+#include <Geode/modify/CCKeyboardDispatcher.hpp>
 class $modify(CCKeyboardDispatcher) {
 	bool dispatchKeyboardMSG(enumKeyCodes key, bool down IF_2_2(, bool repeat)) {
 		if (!ImGuiCocos::get().isInitialized())
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat));
 
 		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
-		if (shouldEatInput || !down) {
+		if (true) { // why "shouldEatInput || !down" was here? imgui wants key events all the time -LatterRarity70
 			const auto imKey = cocosToImGuiKey(key);
 			if (imKey != ImGuiKey_None) {
 				ImGui::GetIO().AddKeyEvent(imKey, down);
@@ -121,6 +105,32 @@ class $modify(CCKeyboardDispatcher) {
 };
 #endif
 
+/*
+
+	Mouse and touch events
+
+*/
+
+#ifndef GEODE_IS_IOS
+#include <Geode/modify/CCMouseDispatcher.hpp>
+class $modify(CCMouseDispatcher) {
+	bool dispatchScrollMSG(float y, float x) {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCMouseDispatcher::dispatchScrollMSG(y, x);
+
+		auto& io = ImGui::GetIO();
+		static constexpr float scrollMult = 1.f / 10.f;
+		io.AddMouseWheelEvent(x * scrollMult, -y * scrollMult);
+
+		if (!io.WantCaptureMouse) {
+			return CCMouseDispatcher::dispatchScrollMSG(y, x);
+		}
+		return true;
+	}
+};
+#endif
+
+#include <Geode/modify/CCTouchDispatcher.hpp>
 class $modify(CCTouchDispatcher) {
 	void touches(CCSet* touches, CCEvent* event, unsigned int type) {
 		if (!ImGuiCocos::get().isInitialized() || !touches)
@@ -131,9 +141,14 @@ class $modify(CCTouchDispatcher) {
 
 		if (!touch) return CCTouchDispatcher::touches(touches, event, type);
 
-		const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
-        io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
-		io.AddMousePosEvent(pos.x, pos.y);
+		// add mouse source events, so imgui can handle touches right -LatterRarity70
+
+		if (geode::cocos::getMousePos().isZero()) { // no multiple pos event ways (backend.cpp)
+			// i mean touch->getLocation() can be different of geode::cocos::getMousePos() -LatterRarity70
+			const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
+			io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen); // !!!
+			io.AddMousePosEvent(pos.x, pos.y);
+		}
 
 		if (io.WantCaptureMouse || shouldBlockInput()) {
 			if (type == CCTOUCHBEGAN) {
@@ -156,6 +171,14 @@ class $modify(CCTouchDispatcher) {
 	}
 };
 
+
+/*
+
+	Drawing
+
+*/
+
+
 // need imgui to be drawn inbetween glClear and swapBuffers:
 // drawScene() {
 //   glClear();
@@ -169,7 +192,6 @@ class $modify(CCTouchDispatcher) {
 #if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_IOS)
 
 #include <Geode/modify/CCEGLView.hpp>
-
 class $modify(CCEGLView) {
 	void swapBuffers() {
 		if (ImGuiCocos::get().isInitialized())
@@ -193,7 +215,6 @@ class $modify(CCEGLView) {
 #else
 
 #include <Geode/modify/CCDirector.hpp>
-
 class $modify(CCDirector) {
 	void drawScene() {
 		CCDirector::drawScene();
