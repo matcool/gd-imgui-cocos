@@ -174,6 +174,16 @@ ImGuiCocos& ImGuiCocos::setup() {
 	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
 	io.IniFilename = iniPath.c_str();
 
+    //define geode's clipboard funcs for imgui
+    auto static read = geode::utils::clipboard::read();
+    ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
+		read = geode::utils::clipboard::read();
+		return read.c_str();
+	};
+    ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text) {
+		geode::utils::clipboard::write(text);
+	};
+
 	m_initialized = true;
 
 	// call the setup function before creating the font texture,
@@ -273,6 +283,7 @@ void ImGuiCocos::newFrame() {
 
 #ifdef GEODE_IS_DESKTOP
 	const auto mouse = cocosToFrame(geode::cocos::getMousePos());
+    io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
 	io.AddMousePosEvent(mouse.x, mouse.y);
 #endif
 
