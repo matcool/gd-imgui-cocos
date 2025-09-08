@@ -26,7 +26,7 @@ set(HAS_IMGUI ON)
 CPMAddPackage("gh:matcool/gd-imgui-cocos#...")
 ```
 
-Optionally you can exclude some [hooks](/blob/geode/src/hooks.cpp) from imgui-cocos (to make own impl for example):
+Optionally you can exclude some [hooks](/src/hooks.cpp) from imgui-cocos (to make own impl for example):
 - `IMGUI_COCOS_EXCLUDE_IME_DISPATCHER_HOOKS`
     - `IMGUI_COCOS_EXCLUDE_INSERT_TEXT_HOOK`
     - `IMGUI_COCOS_EXCLUDE_DELETE_BACKWARD_HOOK`
