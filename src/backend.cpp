@@ -11,27 +11,6 @@
 
 using namespace geode::prelude;
 
-// little helper function to convert ImTexture2D <=> GLuint,
-// supporting both versions of imgui where this was a void* and is now a u64
-// (templated because c++ is stupid)
-
-template <class T = ImTextureID>
-static GLuint toGLTexture(std::type_identity_t<T> tex) {
-	if constexpr (std::is_same_v<T, void*>) {
-		return static_cast<GLuint>(reinterpret_cast<std::uintptr_t>(tex));
-	} else {
-		return static_cast<GLuint>(tex);
-	}
-}
-template <class T = ImTextureID>
-static T fromGLTexture(GLuint tex) {
-	if constexpr (std::is_same_v<T, void*>) {
-		return reinterpret_cast<T>(tex);
-	} else {
-		return static_cast<T>(tex);
-	}
-}
-
 // make sure this doesn't break in some future version
 #if defined(GEODE_IS_WINDOWS) && GEODE_COMP_GD_VERSION >= 22060
 
@@ -197,7 +176,7 @@ ImGuiCocos& ImGuiCocos::setup() {
 	m_fontTexture = new CCTexture2D;
 	m_fontTexture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(static_cast<float>(width), static_cast<float>(height)));
 
-	io.Fonts->SetTexID(fromGLTexture(m_fontTexture->getName()));
+	io.Fonts->SetTexID(ImGui::fromGLTexture(m_fontTexture->getName()));
 
 	return *this;
 }
@@ -335,7 +314,7 @@ void ImGuiCocos::legacyRenderFrame() const {
 		auto* idxBuffer = list->IdxBuffer.Data;
 		auto* vtxBuffer = list->VtxBuffer.Data;
 		for (auto& cmd : list->CmdBuffer) {
-			ccGLBindTexture2D(toGLTexture(cmd.GetTexID()));
+			ccGLBindTexture2D(ImGui::toGLTexture(cmd.GetTexID()));
 
 			const auto rect = cmd.ClipRect;
 			const auto orig = frameToCocos(ImVec2(rect.x, rect.y));
@@ -434,7 +413,7 @@ void ImGuiCocos::renderFrame() const {
 				continue;
 			}
 
-			ccGLBindTexture2D(toGLTexture(cmd.GetTexID()));
+			ccGLBindTexture2D(ImGui::toGLTexture(cmd.GetTexID()));
 
 			const auto rect = cmd.ClipRect;
 			const auto orig = frameToCocos(ImVec2(rect.x, rect.y));

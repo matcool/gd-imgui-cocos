@@ -16,5 +16,6 @@ add_library(test-mod SHARED main.cpp)
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 target_link_libraries(test-mod imgui-cocos)
+# target_compile_definitions(imgui-cocos INTERFACE IMGUI_COCOS_EXCLUDE_SCROLL_HOOK)
 
 setup_geode_mod(test-mod)
