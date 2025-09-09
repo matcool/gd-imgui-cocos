@@ -46,7 +46,7 @@ private:
 	bool m_visible = true;
 	bool m_reloading = false;
 	bool m_forceLegacy = false;
-	std::function<void()> m_setupCall, m_drawCall;
+	std::vector<std::function<void()>> m_setupCalls, m_drawCalls, m_destroyCalls;
 	InputMode m_inputMode = InputMode::Default;
 	ImGuiMouseCursor m_lastCursor = ImGuiMouseCursor_COUNT;
 
@@ -70,6 +70,8 @@ public:
 	ImGuiCocos& setup();
 
 	ImGuiCocos& draw(std::function<void()> fun);
+
+	ImGuiCocos& onDestroy(std::function<void()> fun);
 
 	// used to reinitialize imgui context
 	void reload();
@@ -167,43 +169,31 @@ public:
 		static void CCNodeImage(cocos2d::CCNode* node, float maxWidth = ImGui::GetContentRegionAvail().x) {
 			if (!node) return;
 
+			auto sf = cocos2d::CCDirector::sharedDirector()->getContentScaleFactor();
+			cocos2d::CCDirector::sharedDirector()->setContentScaleFactor(2.f);
+
 			struct Entry {
 				geode::Ref<cocos2d::CCNode> node;
 				geode::Ref<cocos2d::CCRenderTexture> rt;
 				cocos2d::CCSize lastSize;
 			};
-
 			static std::map<cocos2d::CCNode*, Entry> created;
+
 			auto& E = created[node];
 
 			auto currentSize = E.node ? E.node->getContentSize() : node->getContentSize();
 
+			int w = static_cast<int>(currentSize.width);
+			int h = static_cast<int>(currentSize.height);
+
 			if (!E.node || !E.rt) {
 				E.node = node;
-				E.lastSize = currentSize;
-
-				int w = static_cast<int>(currentSize.width);
-				int h = static_cast<int>(currentSize.height);
-
-				if (w <= 0) w = 1;
-				if (h <= 0) h = 1;
-
 				E.rt = cocos2d::CCRenderTexture::create(w, h);
 				if (!E.rt) return;
 			}
 
-			if (E.lastSize.width != currentSize.width || E.lastSize.height != currentSize.height) {
-				E.lastSize = currentSize;
-
-				int w = static_cast<int>(currentSize.width);
-				int h = static_cast<int>(currentSize.height);
-
-				if (w <= 0) w = 1;
-				if (h <= 0) h = 1;
-
-				E.rt = cocos2d::CCRenderTexture::create(w, h);
-				if (!E.rt) return;
-			}
+			E.rt->m_nWidth = w;
+			E.rt->m_nHeight = h;
 
 			//fk
 			GLint oldViewport[4];
@@ -228,6 +218,7 @@ public:
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 			E.node->visit();
+
 			E.rt->end();
 
 			glViewport(oldViewport[0], oldViewport[1], oldViewport[2], oldViewport[3]);
@@ -244,20 +235,22 @@ public:
 			if (!sprite or !sprite->getTexture()) return;
 
 			GLuint texID = sprite->getTexture()->getName();
-			auto w = sprite->getTexture()->getPixelsWide();
-			auto h = sprite->getTexture()->getPixelsHigh();
+			auto tw = sprite->getTexture()->getPixelsWide();
+			auto th = sprite->getTexture()->getPixelsHigh();
 
-			if (w <= 0 or h <= 0) return;
+			if (tw <= 0 or th <= 0) return;
 
-			float scale = std::min(maxWidth / w, 1.0f);
-			ImVec2 itemSize = ImVec2(w * scale, h * scale);
-
+			float scale = maxWidth / tw;
+			ImVec2 itemSize = ImVec2(tw * scale, th * scale);
+			ImGui::SetNextItemWidth(itemSize.x);
 			ImGui::Image(
 				ImGui::fromGLTexture(texID),
 				itemSize,
 				ImVec2(0, 1),
 				ImVec2(1, 0)
 			);
+
+			cocos2d::CCDirector::sharedDirector()->setContentScaleFactor(sf);
 		}
 
 		static auto& get() { return ImGuiCocos::get(); }

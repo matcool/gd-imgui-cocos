@@ -57,16 +57,21 @@ ImGuiCocos& ImGuiCocos::get() {
 }
 
 ImGuiCocos::ImGuiCocos() {
-	m_setupCall = m_drawCall = [] {};
+	m_setupCalls = m_drawCalls = { [] {} };
 }
 
 ImGuiCocos& ImGuiCocos::setup(std::function<void()> fun) {
-	m_setupCall = std::move(fun);
+	m_setupCalls.push_back(std::move(fun));
 	return this->setup();
 }
 
 ImGuiCocos& ImGuiCocos::draw(std::function<void()> fun) {
-	m_drawCall = std::move(fun);
+	m_drawCalls.push_back(std::move(fun));
+	return *this;
+}
+
+ImGuiCocos& ImGuiCocos::onDestroy(std::function<void()> fun) {
+	m_destroyCalls.push_back(std::move(fun));
 	return *this;
 }
 
@@ -167,7 +172,7 @@ ImGuiCocos& ImGuiCocos::setup() {
 
 	// call the setup function before creating the font texture,
 	// to allow for custom fonts
-	m_setupCall();
+	for (auto fn : m_setupCalls) if (fn) fn();
 
 	unsigned char* pixels;
 	int width, height;
@@ -188,6 +193,8 @@ void ImGuiCocos::destroy() {
 	ImGui::DestroyContext();
 	delete m_fontTexture;
 	m_initialized = false;
+
+	for (auto fn : m_destroyCalls) if (fn) fn();
 }
 
 void ImGuiCocos::reload() {
@@ -226,7 +233,7 @@ void ImGuiCocos::drawFrame() {
 	ImGui::NewFrame();
 
 	// actually draws stuff with imgui functions
-	m_drawCall();
+	for (auto fn : m_drawCalls) if (fn) fn();
 
 	// renders the triangles onto the screen
 	ImGui::Render();
