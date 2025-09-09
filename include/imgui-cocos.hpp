@@ -168,7 +168,6 @@ public:
 
 		static void CCNodeImage(cocos2d::CCNode* node, float maxWidth = ImGui::GetContentRegionAvail().x) {
 			if (!node) return;
-			return;//a
 
 			auto sf = cocos2d::CCDirector::get()->m_fContentScaleFactor;
 			cocos2d::CCDirector::get()->m_fContentScaleFactor = (2.f);
