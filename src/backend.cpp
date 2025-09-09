@@ -11,27 +11,6 @@
 
 using namespace geode::prelude;
 
-// little helper function to convert ImTexture2D <=> GLuint,
-// supporting both versions of imgui where this was a void* and is now a u64
-// (templated because c++ is stupid)
-
-template <class T = ImTextureID>
-static GLuint toGLTexture(std::type_identity_t<T> tex) {
-	if constexpr (std::is_same_v<T, void*>) {
-		return static_cast<GLuint>(reinterpret_cast<std::uintptr_t>(tex));
-	} else {
-		return static_cast<GLuint>(tex);
-	}
-}
-template <class T = ImTextureID>
-static T fromGLTexture(GLuint tex) {
-	if constexpr (std::is_same_v<T, void*>) {
-		return reinterpret_cast<T>(tex);
-	} else {
-		return static_cast<T>(tex);
-	}
-}
-
 // make sure this doesn't break in some future version
 #if defined(GEODE_IS_WINDOWS) && GEODE_COMP_GD_VERSION >= 22060
 
@@ -78,16 +57,21 @@ ImGuiCocos& ImGuiCocos::get() {
 }
 
 ImGuiCocos::ImGuiCocos() {
-	m_setupCall = m_drawCall = [] {};
+	m_setupCalls = m_drawCalls = { [] {} };
 }
 
 ImGuiCocos& ImGuiCocos::setup(std::function<void()> fun) {
-	m_setupCall = std::move(fun);
+	m_setupCalls.push_back(std::move(fun));
 	return this->setup();
 }
 
 ImGuiCocos& ImGuiCocos::draw(std::function<void()> fun) {
-	m_drawCall = std::move(fun);
+	m_drawCalls.push_back(std::move(fun));
+	return *this;
+}
+
+ImGuiCocos& ImGuiCocos::onDestroy(std::function<void()> fun) {
+	m_destroyCalls.push_back(std::move(fun));
 	return *this;
 }
 
@@ -174,11 +158,21 @@ ImGuiCocos& ImGuiCocos::setup() {
 	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
 	io.IniFilename = iniPath.c_str();
 
+    //define geode's clipboard funcs for imgui
+    auto static read = geode::utils::clipboard::read();
+    ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
+		read = geode::utils::clipboard::read();
+		return read.c_str();
+	};
+    ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text) {
+		geode::utils::clipboard::write(text);
+	};
+
 	m_initialized = true;
 
 	// call the setup function before creating the font texture,
 	// to allow for custom fonts
-	m_setupCall();
+	for (auto fn : m_setupCalls) if (fn) fn();
 
 	unsigned char* pixels;
 	int width, height;
@@ -187,7 +181,7 @@ ImGuiCocos& ImGuiCocos::setup() {
 	m_fontTexture = new CCTexture2D;
 	m_fontTexture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(static_cast<float>(width), static_cast<float>(height)));
 
-	io.Fonts->SetTexID(fromGLTexture(m_fontTexture->getName()));
+	io.Fonts->SetTexID(ImGui::fromGLTexture(m_fontTexture->getName()));
 
 	return *this;
 }
@@ -199,6 +193,8 @@ void ImGuiCocos::destroy() {
 	ImGui::DestroyContext();
 	delete m_fontTexture;
 	m_initialized = false;
+
+	for (auto fn : m_destroyCalls) if (fn) fn();
 }
 
 void ImGuiCocos::reload() {
@@ -237,7 +233,7 @@ void ImGuiCocos::drawFrame() {
 	ImGui::NewFrame();
 
 	// actually draws stuff with imgui functions
-	m_drawCall();
+	for (auto fn : m_drawCalls) if (fn) fn();
 
 	// renders the triangles onto the screen
 	ImGui::Render();
@@ -271,10 +267,11 @@ void ImGuiCocos::newFrame() {
 		io.DeltaTime = 1.f / 60.f;
 	}
 
-#ifdef GEODE_IS_DESKTOP
-	const auto mouse = cocosToFrame(geode::cocos::getMousePos());
-	io.AddMousePosEvent(mouse.x, mouse.y);
-#endif
+	if (auto pos = geode::cocos::getMousePos(); !pos.isZero()) {
+		const auto mouse = cocosToFrame(pos);
+		io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+		io.AddMousePosEvent(mouse.x, mouse.y);
+	}
 
 	auto* kb = director->getKeyboardDispatcher();
 	io.KeyAlt = kb->getAltKeyPressed() || kb->getCommandKeyPressed(); // look
@@ -324,7 +321,7 @@ void ImGuiCocos::legacyRenderFrame() const {
 		auto* idxBuffer = list->IdxBuffer.Data;
 		auto* vtxBuffer = list->VtxBuffer.Data;
 		for (auto& cmd : list->CmdBuffer) {
-			ccGLBindTexture2D(toGLTexture(cmd.GetTexID()));
+			ccGLBindTexture2D(ImGui::toGLTexture(cmd.GetTexID()));
 
 			const auto rect = cmd.ClipRect;
 			const auto orig = frameToCocos(ImVec2(rect.x, rect.y));
@@ -423,7 +420,7 @@ void ImGuiCocos::renderFrame() const {
 				continue;
 			}
 
-			ccGLBindTexture2D(toGLTexture(cmd.GetTexID()));
+			ccGLBindTexture2D(ImGui::toGLTexture(cmd.GetTexID()));
 
 			const auto rect = cmd.ClipRect;
 			const auto orig = frameToCocos(ImVec2(rect.x, rect.y));

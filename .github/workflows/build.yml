@@ -1,14 +1,20 @@
 name: Build Geode Mod
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
     branches:
-      - "**"
+      - '**'
 
 jobs:
+
   build:
+    continue-on-error: true # continue even if build failed for some platform
     strategy:
+
       fail-fast: false
       matrix:
         config:
@@ -22,13 +28,13 @@ jobs:
           os: macos-latest
           target: iOS
 
-        - name: Android32
-          os: ubuntu-latest
-          target: Android32
-
         - name: Android64
           os: ubuntu-latest
           target: Android64
+
+        - name: Android32
+          os: ubuntu-latest
+          target: Android32
 
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
@@ -39,20 +45,34 @@ jobs:
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
-          sdk: 'nightly'
           combine: true
           target: ${{ matrix.config.target }}
 
-  package:
-    name: Package builds
+  upload:
+    name: Combine and upload builds
     runs-on: ubuntu-latest
     needs: ['build']
-
     steps:
-      - uses: geode-sdk/build-geode-mod/combine@main
+
+      - name: "Combine builds"
+        uses: geode-sdk/build-geode-mod/combine@main
         id: build
 
-      - uses: actions/upload-artifact@v4
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4
         with:
           name: Build Output
           path: ${{ steps.build.outputs.build-output }}
+
+      - name: "Development Release"
+        uses: ncipollo/release-action@v1
+        with:
+          name: "Development Release"
+          body: |
+           Release of success build for latest commit on `${{ github.head_ref || github.ref_name }}`.
+           The build workflow run for this release goes in [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          tag: "nightly"
+          prerelease: false
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: "${{steps.build.outputs.build-output}}/*"
