@@ -169,8 +169,8 @@ public:
 		static void CCNodeImage(cocos2d::CCNode* node, float maxWidth = ImGui::GetContentRegionAvail().x) {
 			if (!node) return;
 
-			auto sf = cocos2d::CCDirector::sharedDirector()->getContentScaleFactor();
-			cocos2d::CCDirector::sharedDirector()->setContentScaleFactor(2.f);
+			auto sf = cocos2d::CCDirector::get()->m_fContentScaleFactor;
+			cocos2d::CCDirector::get()->m_fContentScaleFactor = (2.f);
 
 			struct Entry {
 				geode::Ref<cocos2d::CCNode> node;
@@ -250,7 +250,7 @@ public:
 				ImVec2(1, 0)
 			);
 
-			cocos2d::CCDirector::sharedDirector()->setContentScaleFactor(sf);
+			cocos2d::CCDirector::get()->m_fContentScaleFactor = (sf);
 		}
 
 		static auto& get() { return ImGuiCocos::get(); }
