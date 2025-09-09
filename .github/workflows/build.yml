@@ -72,7 +72,7 @@ jobs:
            Release of success build for latest commit on `${{ github.head_ref || github.ref_name }}`.
            The build workflow run for this release goes in [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           tag: "nightly"
-          prerelease: true
+          prerelease: false
           allowUpdates: true
           artifactErrorsFailBuild: true
           artifacts: "${{steps.build.outputs.build-output}}/*"
