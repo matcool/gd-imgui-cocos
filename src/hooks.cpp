@@ -106,7 +106,7 @@ class $modify(CCKeyboardDispatcher) {
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat));
 
 		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
-		if (shouldEatInput || !down) {
+		if (true) { // why "shouldEatInput || !down" was here? imgui wants key events all the time - LatterRarity70
 			const auto imKey = cocosToImGuiKey(key);
 			if (imKey != ImGuiKey_None) {
 				ImGui::GetIO().AddKeyEvent(imKey, down);
@@ -114,7 +114,8 @@ class $modify(CCKeyboardDispatcher) {
 		}
 		if (shouldEatInput) {
 			return false;
-		} else {
+		} 
+		else {
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat));
 		}
 	}
