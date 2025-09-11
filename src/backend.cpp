@@ -173,6 +173,16 @@ ImGuiCocos& ImGuiCocos::setup() {
 	// use static since imgui does not own the pointer!
 	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
 	io.IniFilename = iniPath.c_str();
+	
+    //define geode's clipboard funcs for imgui
+    auto static read = geode::utils::clipboard::read();
+    ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
+		read = geode::utils::clipboard::read();
+		return read.c_str();
+	};
+    ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text) {
+		geode::utils::clipboard::write(text);
+	};
 
 	m_initialized = true;
 
@@ -271,10 +281,11 @@ void ImGuiCocos::newFrame() {
 		io.DeltaTime = 1.f / 60.f;
 	}
 
-#ifdef GEODE_IS_DESKTOP
-	const auto mouse = cocosToFrame(geode::cocos::getMousePos());
-	io.AddMousePosEvent(mouse.x, mouse.y);
-#endif
+	if (auto pos = geode::cocos::getMousePos(); !pos.isZero()) {
+		const auto mouse = cocosToFrame(pos);
+		io.AddMouseSourceEvent(ImGuiMouseSource_Mouse);
+		io.AddMousePosEvent(mouse.x, mouse.y);
+	}
 
 	auto* kb = director->getKeyboardDispatcher();
 	io.KeyAlt = kb->getAltKeyPressed() || kb->getCommandKeyPressed(); // look
