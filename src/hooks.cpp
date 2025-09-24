@@ -106,7 +106,7 @@ class $modify(CCKeyboardDispatcher) {
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat));
 
 		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
-		if (true) { // why "shouldEatInput || !down" was here? imgui wants key events all the time - LatterRarity70
+		if (shouldEatInput || !down) {
 			const auto imKey = cocosToImGuiKey(key);
 			if (imKey != ImGuiKey_None) {
 				ImGui::GetIO().AddKeyEvent(imKey, down);
@@ -114,8 +114,7 @@ class $modify(CCKeyboardDispatcher) {
 		}
 		if (shouldEatInput) {
 			return false;
-		} 
-		else {
+		} else {
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat));
 		}
 	}
@@ -132,11 +131,11 @@ class $modify(CCTouchDispatcher) {
 
 		if (!touch) return CCTouchDispatcher::touches(touches, event, type);
 
-		// add mouse source events, so imgui can handle touches right -LatterRarity70
-		if (geode::cocos::getMousePos().isZero()) { // no multiple pos event ways (backend.cpp workin on it already)
-			// i mean touch->getLocation() can be different of geode::cocos::getMousePos()! -LatterRarity70
+		// add mouse source events, so imgui can handle touches right
+		if (geode::cocos::getMousePos().isZero()) {
+			// touch->getLocation() can be different from geode::cocos::getMousePos()!
 			const auto pos = ImGuiCocos::cocosToFrame(touch->getLocation());
-			io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen); // !!!
+			io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
 			io.AddMousePosEvent(pos.x, pos.y);
 		}
 
