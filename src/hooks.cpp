@@ -175,6 +175,14 @@ class $modify(CCTouchDispatcher) {
 #include <Geode/modify/CCEGLView.hpp>
 
 class $modify(CCEGLView) {
+#ifdef IMGUI_COCOS_HOOK_EARLY
+	static void onModify(auto& self) {
+		if (!self.setHookPriorityPre("cocos2d::CCEGLView::swapBuffers", Priority::Early)) {
+			log::warn("Failed to set hook priority for swapBuffers");
+		}
+	}
+#endif
+
 	void swapBuffers() {
 		if (ImGuiCocos::get().isInitialized())
 			ImGuiCocos::get().drawFrame();
