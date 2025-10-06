@@ -173,7 +173,7 @@ ImGuiCocos& ImGuiCocos::setup() {
 	// use static since imgui does not own the pointer!
 	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
 	io.IniFilename = iniPath.c_str();
-	
+
     // define geode's clipboard funcs for imgui
     auto static read = geode::utils::clipboard::read();
     ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
