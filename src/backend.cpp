@@ -25,6 +25,7 @@ struct GLFWCursorData {
 
 static void setMouseCursor(ImGuiMouseCursor cursor) {
 	auto* glfwWindow = CCEGLView::get()->getWindow();
+	if (!glfwWindow) return;
 
 	auto& cursorField = *reinterpret_cast<GLFWCursorData**>(reinterpret_cast<uintptr_t>(glfwWindow) + 0x50);
 	auto winCursor = IDC_ARROW;
@@ -81,6 +82,8 @@ void ImGuiCocos::toggle() {
 
 void ImGuiCocos::setVisible(bool v) {
 	m_visible = v;
+	if (!m_initialized) return;
+	
 	auto& io = ImGui::GetIO();
 	if (!m_visible) {
 		io.WantCaptureKeyboard = false;
@@ -122,12 +125,28 @@ bool ImGuiCocos::isInitialized() const {
 ImGuiCocos& ImGuiCocos::setup() {
 	if (m_initialized) return *this;
 
+	// xd
+	auto* director = CCDirector::sharedDirector();
+	if (!director) {
+		log::error("ImGuiCocos::setup() - CCDirector not available");
+		return *this;
+	}
+
+	auto* view = director->getOpenGLView();
+	if (!view) {
+		log::error("ImGuiCocos::setup() - OpenGL view not available");
+		return *this;
+	}
+
 	ImGui::CreateContext();
 
 	auto& io = ImGui::GetIO();
 
 	static const int glVersion = [] {
-	#if defined(GEODE_IS_ANDROID)
+	#if defined(GEODE_IS_IOS)
+		// iOS uses GLES v2/v3
+		return 200;
+	#elif defined(GEODE_IS_ANDROID)
 		// android uses GLES v2
 		return 200;
 	#endif
@@ -140,8 +159,13 @@ ImGuiCocos& ImGuiCocos::setup() {
 	#endif
 		if (major == 0 && minor == 0) {
 			auto* verStr = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-			if (!verStr || sscanf(verStr, "%d.%d", &major, &minor) != 2) {
+			if (!verStr) {
+				log::warn("Failed to get OpenGL version, assuming 2.1");
+				return 210;
+			}
+			if (sscanf(verStr, "%d.%d", &major, &minor) != 2) {
 				// failed to parse version string, just assume opengl 2.1
+				log::warn("Failed to parse OpenGL version string: {}, assuming 2.1", verStr);
 				return 210;
 			}
 		}
@@ -158,14 +182,14 @@ ImGuiCocos& ImGuiCocos::setup() {
 	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
 	io.IniFilename = iniPath.c_str();
 
-    //define geode's clipboard funcs for imgui
+    // define geode's clipboard funcs for imgui
     auto static read = geode::utils::clipboard::read();
     ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
 		read = geode::utils::clipboard::read();
 		return read.c_str();
 	};
     ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text) {
-		geode::utils::clipboard::write(text);
+		if (text) geode::utils::clipboard::write(text);
 	};
 
 	m_initialized = true;
@@ -174,12 +198,26 @@ ImGuiCocos& ImGuiCocos::setup() {
 	// to allow for custom fonts
 	for (auto fn : m_setupCalls) if (fn) fn();
 
-	unsigned char* pixels;
-	int width, height;
+	unsigned char* pixels = nullptr;
+	int width = 0, height = 0;
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
+	if (!pixels || width <= 0 || height <= 0) {
+		log::error("Failed to get font texture data");
+		ImGui::DestroyContext();
+		m_initialized = false;
+		return *this;
+	}
+
 	m_fontTexture = new CCTexture2D;
-	m_fontTexture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(static_cast<float>(width), static_cast<float>(height)));
+	if (!m_fontTexture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(static_cast<float>(width), static_cast<float>(height)))) {
+		log::error("Failed to initialize font texture");
+		delete m_fontTexture;
+		m_fontTexture = nullptr;
+		ImGui::DestroyContext();
+		m_initialized = false;
+		return *this;
+	}
 
 	io.Fonts->SetTexID(ImGui::fromGLTexture(m_fontTexture->getName()));
 
@@ -191,7 +229,7 @@ void ImGuiCocos::destroy() {
 
 	ImGui::GetIO().BackendPlatformUserData = nullptr;
 	ImGui::DestroyContext();
-	delete m_fontTexture;
+	
 	m_initialized = false;
 
 	for (auto fn : m_destroyCalls) if (fn) fn();
@@ -203,8 +241,15 @@ void ImGuiCocos::reload() {
 
 ImVec2 ImGuiCocos::cocosToFrame(const CCPoint& pos) {
 	auto* director = CCDirector::sharedDirector();
-	const auto frameSize = director->getOpenGLView()->getFrameSize() * geode::utils::getDisplayFactor();
+	if (!director) return ImVec2(0, 0);
+	
+	auto* view = director->getOpenGLView();
+	if (!view) return ImVec2(0, 0);
+	
+	const auto frameSize = view->getFrameSize() * geode::utils::getDisplayFactor();
 	const auto winSize = director->getWinSize();
+
+	if (winSize.width <= 0 || winSize.height <= 0) return ImVec2(0, 0);
 
 	return {
 		pos.x / winSize.width * frameSize.width,
@@ -214,8 +259,15 @@ ImVec2 ImGuiCocos::cocosToFrame(const CCPoint& pos) {
 
 CCPoint ImGuiCocos::frameToCocos(const ImVec2& pos) {
 	auto* director = CCDirector::sharedDirector();
-	const auto frameSize = director->getOpenGLView()->getFrameSize() * geode::utils::getDisplayFactor();
+	if (!director) return CCPoint(0, 0);
+	
+	auto* view = director->getOpenGLView();
+	if (!view) return CCPoint(0, 0);
+	
+	const auto frameSize = view->getFrameSize() * geode::utils::getDisplayFactor();
 	const auto winSize = director->getWinSize();
+
+	if (frameSize.width <= 0 || frameSize.height <= 0) return CCPoint(0, 0);
 
 	return {
 		pos.x / frameSize.width * winSize.width,
@@ -252,15 +304,26 @@ void ImGuiCocos::newFrame() {
 
 	// opengl2 new frame
 	auto* director = CCDirector::sharedDirector();
+	if (!director) return;
+	
+	auto* view = director->getOpenGLView();
+	if (!view) return;
+	
 	const auto winSize = director->getWinSize();
-	const auto frameSize = director->getOpenGLView()->getFrameSize() * geode::utils::getDisplayFactor();
+	const auto frameSize = view->getFrameSize() * geode::utils::getDisplayFactor();
 
 	// glfw new frame
 	io.DisplaySize = ImVec2(frameSize.width, frameSize.height);
-	io.DisplayFramebufferScale = ImVec2(
-		winSize.width / frameSize.width,
-		winSize.height / frameSize.height
-	);
+	
+	if (frameSize.width > 0 && frameSize.height > 0) {
+		io.DisplayFramebufferScale = ImVec2(
+			winSize.width / frameSize.width,
+			winSize.height / frameSize.height
+		);
+	} else {
+		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	}
+	
 	if (director->getDeltaTime() > 0.f) {
 		io.DeltaTime = director->getDeltaTime();
 	} else {
@@ -274,9 +337,11 @@ void ImGuiCocos::newFrame() {
 	}
 
 	auto* kb = director->getKeyboardDispatcher();
-	io.KeyAlt = kb->getAltKeyPressed() || kb->getCommandKeyPressed(); // look
-	io.KeyCtrl = kb->getControlKeyPressed();
-	io.KeyShift = kb->getShiftKeyPressed();
+	if (kb) {
+		io.KeyAlt = kb->getAltKeyPressed() || kb->getCommandKeyPressed();
+		io.KeyCtrl = kb->getControlKeyPressed();
+		io.KeyShift = kb->getShiftKeyPressed();
+	}
 
 #ifdef MAT_SUPPORTS_CURSOR
 	auto cursor = io.MouseDrawCursor ? ImGuiMouseCursor_None : ImGui::GetMouseCursor();
@@ -288,7 +353,8 @@ void ImGuiCocos::newFrame() {
 }
 
 static bool hasExtension(const std::string_view ext) {
-	static auto exts = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+	// dont use static here - check every time to avoid nullptr issues
+	const char* exts = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
 	if (exts == nullptr)
 		return false;
 
@@ -297,6 +363,8 @@ static bool hasExtension(const std::string_view ext) {
 
 static void drawTriangle(const std::array<CCPoint, 3>& poly, const std::array<ccColor4F, 3>& colors, const std::array<CCPoint, 3>& uvs) {
 	auto* shader = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor);
+	if (!shader) return;
+	
 	shader->use();
 	shader->setUniformsForBuiltins();
 
@@ -315,11 +383,31 @@ void ImGuiCocos::legacyRenderFrame() const {
 	glEnable(GL_SCISSOR_TEST);
 
 	auto* drawData = ImGui::GetDrawData();
+	if (!drawData) {
+		glDisable(GL_SCISSOR_TEST);
+		return;
+	}
+
+	auto* director = CCDirector::sharedDirector();
+	if (!director) {
+		glDisable(GL_SCISSOR_TEST);
+		return;
+	}
+
+	auto* view = director->getOpenGLView();
+	if (!view) {
+		glDisable(GL_SCISSOR_TEST);
+		return;
+	}
 
 	for (int i = 0; i < drawData->CmdListsCount; ++i) {
 		auto* list = drawData->CmdLists[i];
+		if (!list) continue;
+		
 		auto* idxBuffer = list->IdxBuffer.Data;
 		auto* vtxBuffer = list->VtxBuffer.Data;
+		if (!idxBuffer || !vtxBuffer) continue;
+		
 		for (auto& cmd : list->CmdBuffer) {
 			ccGLBindTexture2D(ImGui::toGLTexture(cmd.GetTexID()));
 
@@ -328,9 +416,11 @@ void ImGuiCocos::legacyRenderFrame() const {
 			const auto end = frameToCocos(ImVec2(rect.z, rect.w));
 			if (end.x <= orig.x || end.y >= orig.y)
 				continue;
-			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
+			view->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
 
 			for (unsigned int j = 0; j < cmd.ElemCount; j += 3) {
+				if (cmd.IdxOffset + j + 2 >= list->IdxBuffer.Size) break;
+				
 				const auto a = vtxBuffer[idxBuffer[cmd.IdxOffset + j + 0]];
 				const auto b = vtxBuffer[idxBuffer[cmd.IdxOffset + j + 1]];
 				const auto c = vtxBuffer[idxBuffer[cmd.IdxOffset + j + 2]];
@@ -373,8 +463,15 @@ void ImGuiCocos::renderFrame() const {
 		return legacyRenderFrame();
 
 	auto* drawData = ImGui::GetDrawData();
+	if (!drawData) return;
 
-	const bool hasVtxOffset = ImGui::GetIO().BackendFlags | ImGuiBackendFlags_RendererHasVtxOffset;
+	auto* director = CCDirector::sharedDirector();
+	if (!director) return;
+
+	auto* view = director->getOpenGLView();
+	if (!view) return;
+
+	const bool hasVtxOffset = ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset;
 
 	glEnable(GL_SCISSOR_TEST);
 
@@ -399,11 +496,22 @@ void ImGuiCocos::renderFrame() const {
 	glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), reinterpret_cast<void*>(offsetof(ImDrawVert, col)));
 
 	auto* shader = CCShaderCache::sharedShaderCache()->programForKey(kCCShader_PositionTextureColor);
+	if (!shader) {
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glDeleteBuffers(2, &vbos[0]);
+		glDeleteVertexArrays(1, &vao);
+		glDisable(GL_SCISSOR_TEST);
+		return;
+	}
+	
 	shader->use();
 	shader->setUniformsForBuiltins();
 
 	for (int i = 0; i < drawData->CmdListsCount; ++i) {
 		auto* list = drawData->CmdLists[i];
+		if (!list) continue;
 
 		// convert vertex coords to cocos space
 		for (auto& j : list->VtxBuffer) {
@@ -429,7 +537,7 @@ void ImGuiCocos::renderFrame() const {
 			if (end.x <= orig.x || end.y >= orig.y)
 				continue;
 
-			CCDirector::sharedDirector()->getOpenGLView()->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
+			view->setScissorInPoints(orig.x, end.y, end.x - orig.x, orig.y - end.y);
 
 			if (hasVtxOffset) {
 			#if !defined(GEODE_IS_MOBILE)
