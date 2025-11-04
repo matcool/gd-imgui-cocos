@@ -2,7 +2,6 @@
 
 #include <cocos2d.h>
 #include <functional>
-#include <string>
 #include <imgui.h>
 
 class ImGuiCocos {
@@ -15,7 +14,6 @@ public:
 		Blocking,
 	};
 private:
-	cocos2d::CCTexture2D* m_fontTexture = nullptr;
 	bool m_initialized = false;
 	bool m_visible = true;
 	bool m_reloading = false;
@@ -23,6 +21,12 @@ private:
 	std::function<void()> m_setupCall, m_drawCall;
 	InputMode m_inputMode = InputMode::Default;
 	ImGuiMouseCursor m_lastCursor = ImGuiMouseCursor_COUNT;
+#ifdef IMGUI_HAS_TEXTURES
+	void updateTexture(ImTextureData*) const;
+#else
+	// will remove this some day.. maybe
+	cocos2d::CCTexture2D* m_fontTexture = nullptr;
+#endif
 
 	ImGuiCocos();
 

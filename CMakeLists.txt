@@ -18,7 +18,7 @@ endif()
 target_include_directories(imgui-cocos INTERFACE include)
 
 option(HAS_IMGUI "If imgui is already provided externally" OFF)
-set(IMGUI_VERSION "v1.91.9b" CACHE STRING "What imgui version to download and use")
+set(IMGUI_VERSION "v1.92.4" CACHE STRING "What imgui version to download and use")
 option(IMGUI_HOOK_EARLY "Hook swapBuffers early, as to show imgui under mod menus. Disable this if you're a mod menu" ON)
 
 if (IMGUI_HOOK_EARLY)

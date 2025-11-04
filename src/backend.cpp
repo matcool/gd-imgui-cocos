@@ -165,27 +165,31 @@ ImGuiCocos& ImGuiCocos::setup() {
 	if (glVersion >= 320) {
 		io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 	}
+#ifdef IMGUI_HAS_TEXTURES
+	io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+#endif
 
 	// use static since imgui does not own the pointer!
 	static const auto iniPath = (Mod::get()->getSaveDir() / "imgui.ini").string();
 	io.IniFilename = iniPath.c_str();
 
-    // define geode's clipboard funcs for imgui
-    auto static read = geode::utils::clipboard::read();
-    ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
+#if IMGUI_VERSION_NUM >= 19110
+	// define geode's clipboard funcs for imgui
+	auto static read = geode::utils::clipboard::read();
+	ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
 		read = geode::utils::clipboard::read();
 		return read.c_str();
 	};
-    ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text) {
+	ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text) {
 		geode::utils::clipboard::write(text);
 	};
+#endif
 
 	m_initialized = true;
 
-	// call the setup function before creating the font texture,
-	// to allow for custom fonts
 	m_setupCall();
 
+#ifndef IMGUI_HAS_TEXTURES
 	unsigned char* pixels;
 	int width, height;
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
@@ -194,6 +198,7 @@ ImGuiCocos& ImGuiCocos::setup() {
 	m_fontTexture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, width, height, CCSize(static_cast<float>(width), static_cast<float>(height)));
 
 	io.Fonts->SetTexID(fromGLTexture(m_fontTexture->getName()));
+#endif
 
 	return *this;
 }
@@ -202,8 +207,17 @@ void ImGuiCocos::destroy() {
 	if (!m_initialized) return;
 
 	ImGui::GetIO().BackendPlatformUserData = nullptr;
-	ImGui::DestroyContext();
+#ifdef IMGUI_HAS_TEXTURES
+	for (auto* tex : ImGui::GetPlatformIO().Textures) {
+		if (tex->RefCount == 1) {
+			tex->SetStatus(ImTextureStatus_WantDestroy);
+			this->updateTexture(tex);
+		}
+	}
+#else
 	delete m_fontTexture;
+#endif
+	ImGui::DestroyContext();
 	m_initialized = false;
 }
 
@@ -267,10 +281,6 @@ void ImGuiCocos::newFrame() {
 
 	// glfw new frame
 	io.DisplaySize = ImVec2(frameSize.width, frameSize.height);
-	io.DisplayFramebufferScale = ImVec2(
-		winSize.width / frameSize.width,
-		winSize.height / frameSize.height
-	);
 	if (director->getDeltaTime() > 0.f) {
 		io.DeltaTime = director->getDeltaTime();
 	} else {
@@ -325,6 +335,16 @@ void ImGuiCocos::legacyRenderFrame() const {
 	glEnable(GL_SCISSOR_TEST);
 
 	auto* drawData = ImGui::GetDrawData();
+
+#ifdef IMGUI_HAS_TEXTURES
+	if (drawData->Textures != nullptr) {
+		for (auto* tex : *drawData->Textures) {
+			if (tex->Status != ImTextureStatus_OK) {
+				this->updateTexture(tex);
+			}
+		}
+	}
+#endif
 
 	for (int i = 0; i < drawData->CmdListsCount; ++i) {
 		auto* list = drawData->CmdLists[i];
@@ -385,6 +405,16 @@ void ImGuiCocos::renderFrame() const {
 	auto* drawData = ImGui::GetDrawData();
 
 	const bool hasVtxOffset = ImGui::GetIO().BackendFlags | ImGuiBackendFlags_RendererHasVtxOffset;
+
+#ifdef IMGUI_HAS_TEXTURES
+	if (drawData->Textures != nullptr) {
+		for (auto* tex : *drawData->Textures) {
+			if (tex->Status != ImTextureStatus_OK) {
+				this->updateTexture(tex);
+			}
+		}
+	}
+#endif
 
 	glEnable(GL_SCISSOR_TEST);
 
@@ -460,3 +490,62 @@ void ImGuiCocos::renderFrame() const {
 
 	glDisable(GL_SCISSOR_TEST);
 }
+
+#ifdef IMGUI_HAS_TEXTURES
+void ImGuiCocos::updateTexture(ImTextureData* tex) const {
+	if (tex->Status == ImTextureStatus_WantCreate) {
+		IM_ASSERT(tex->Format == ImTextureFormat_RGBA32);
+		const void* pixels = tex->GetPixels();
+		auto* ccTexture = new CCTexture2D;
+		ccTexture->initWithData(pixels, kCCTexture2DPixelFormat_RGBA8888, tex->Width, tex->Height, CCSize(static_cast<float>(tex->Width), static_cast<float>(tex->Height)));
+
+		tex->SetTexID(fromGLTexture(ccTexture->getName()));
+		tex->BackendUserData = ccTexture;
+		tex->SetStatus(ImTextureStatus_OK);
+	} else if (tex->Status == ImTextureStatus_WantUpdates) {
+		// cocos has no function for this, do it manually with opengl
+		// copied from `imgui_impl_opengl3.cpp`
+	#ifdef GL_UNPACK_ALIGNMENT
+		// dont mess up odd widths
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	#endif
+
+		GLint lastTexture;
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, &lastTexture);
+		GLuint texID = toGLTexture(tex->TexID);
+		glBindTexture(GL_TEXTURE_2D, texID);
+
+	#ifdef GL_UNPACK_ROW_LENGTH
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->Width);
+		for (ImTextureRect& r : tex->Updates) {
+			glTexSubImage2D(GL_TEXTURE_2D, 0, r.x, r.y, r.w, r.h, GL_RGBA, GL_UNSIGNED_BYTE, tex->GetPixelsAt(r.x, r.y));
+		}
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+	#else
+		// GL ES doesn't have GL_UNPACK_ROW_LENGTH, so copy to a contiguous buffer first
+		static std::vector<unsigned char> tempBuffer;
+		for (ImTextureRect& r : tex->Updates) {
+			tempBuffer.resize(r.w * r.h * tex->BytesPerPixel);
+			auto* ptr = tempBuffer.data();
+			int dataWidth = r.w * tex->BytesPerPixel;
+			for (int y = 0; y < r.h; y++) {
+				std::memcpy(ptr, tex->GetPixelsAt(r.x, r.y + y), dataWidth);
+				ptr += dataWidth;
+			}
+			glTexSubImage2D(GL_TEXTURE_2D, 0, r.x, r.y, r.w, r.h, GL_RGBA, GL_UNSIGNED_BYTE, tempBuffer.data());
+		}
+	#endif
+
+		glBindTexture(GL_TEXTURE_2D, lastTexture); // Restore state
+
+		tex->SetStatus(ImTextureStatus_OK);
+	} else if (tex->Status == ImTextureStatus_WantDestroy) {
+		auto* ccTexture = static_cast<CCTexture2D*>(tex->BackendUserData);
+		delete ccTexture;
+
+		tex->SetTexID(ImTextureID_Invalid);
+		tex->BackendUserData = nullptr;
+		tex->SetStatus(ImTextureStatus_Destroyed);
+	}
+}
+#endif
