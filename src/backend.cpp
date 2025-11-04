@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <imgui.h>
 #include <imgui-cocos.hpp>
+#include <imgui_internal.h>
 #include <utility>
 
 #ifdef GEODE_IS_WINDOWS
@@ -66,6 +67,58 @@ static void setMouseCursor(ImGuiMouseCursor cursor) {
 		};
 	}
 }
+#endif
+
+#ifdef GEODE_IS_MOBILE
+
+class ImGuiIMEDelegate : public CCIMEDelegate {
+protected:
+	bool m_attached = false;
+	std::string m_text;
+public:
+	bool attachWithIME() override {
+		if (CCIMEDelegate::attachWithIME()) {
+			m_attached = true;
+			CCEGLView::get()->setIMEKeyboardState(true);
+			return true;
+		}
+		return false;
+	}
+
+	bool detachWithIME() override {
+		if (CCIMEDelegate::detachWithIME()) {
+			m_attached = false;
+			CCEGLView::get()->setIMEKeyboardState(false);
+			ImGui::ClearActiveID();
+			return true;
+		}
+		return false;
+	}
+
+	bool canAttachWithIME() override {
+		return true;
+	}
+
+	bool canDetachWithIME() override {
+		return true;
+	}
+
+	char const* getContentText() override {
+		auto& buffer = ImGui::GetInputTextState(ImGui::GetFocusID())->TextA;
+		m_text = std::string(buffer.begin(), buffer.end());
+		return m_text.c_str();
+	}
+
+	bool isAttached() {
+		return m_attached;
+	}
+
+	static ImGuiIMEDelegate* get() {
+		static ImGuiIMEDelegate* instance = new ImGuiIMEDelegate();
+		return instance;
+	}
+};
+
 #endif
 
 ImGuiCocos& ImGuiCocos::get() {
@@ -297,6 +350,15 @@ void ImGuiCocos::newFrame() {
 	io.KeyAlt = kb->getAltKeyPressed() || kb->getCommandKeyPressed(); // look
 	io.KeyCtrl = kb->getControlKeyPressed();
 	io.KeyShift = kb->getShiftKeyPressed();
+
+#ifdef GEODE_IS_MOBILE
+	auto ime = ImGuiIMEDelegate::get();
+	if (io.WantTextInput && !ime->isAttached()) {
+		ime->attachWithIME();
+	} else if (!io.WantTextInput && ime->isAttached()) {
+		ime->detachWithIME();
+	}
+#endif
 
 #ifdef MAT_SUPPORTS_CURSOR
 	auto cursor = io.MouseDrawCursor ? ImGuiMouseCursor_None : ImGui::GetMouseCursor();
