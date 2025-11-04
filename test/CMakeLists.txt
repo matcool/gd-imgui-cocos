@@ -22,6 +22,6 @@ setup_geode_mod(test-mod)
 # embed ttf font
 include(embed.cmake)
 
-set(FONT_TTF_PATH ${CPM_PACKAGE_imgui_SOURCE_DIR}/misc/fonts/DroidSans.ttf)
+set(FONT_TTF_PATH ${imgui_SOURCE_DIR}/misc/fonts/DroidSans.ttf)
 FileEmbedAdd("${FONT_TTF_PATH}")
 target_link_libraries(test-mod embedded_files)
