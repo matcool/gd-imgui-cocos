@@ -2,7 +2,6 @@
 #include <imgui.h>
 #include <imgui-cocos.hpp>
 #include <utility>
-#include <type_traits>
 
 #ifdef GEODE_IS_WINDOWS
 	// so msvc shuts up
@@ -13,23 +12,20 @@ using namespace geode::prelude;
 
 // little helper function to convert ImTexture2D <=> GLuint,
 // supporting both versions of imgui where this was a void* and is now a u64
-// (templated because c++ is stupid)
 
-template <class T = ImTextureID>
-static GLuint toGLTexture(std::type_identity_t<T> tex) {
-	if constexpr (std::is_same_v<T, void*>) {
-		return static_cast<GLuint>(reinterpret_cast<std::uintptr_t>(tex));
-	} else {
-		return static_cast<GLuint>(tex);
-	}
+static GLuint toGLTexture(ImTextureID tex) {
+#if IMGUI_VERSION_NUM >= 19140
+	return static_cast<GLuint>(tex);
+#else
+	return static_cast<GLuint>(reinterpret_cast<std::uintptr_t>(tex));
+#endif
 }
-template <class T = ImTextureID>
-static T fromGLTexture(GLuint tex) {
-	if constexpr (std::is_same_v<T, void*>) {
-		return reinterpret_cast<T>(tex);
-	} else {
-		return static_cast<T>(tex);
-	}
+static ImTextureID fromGLTexture(GLuint tex) {
+#if IMGUI_VERSION_NUM >= 19140
+	return static_cast<ImTextureID>(tex);
+#else
+	return reinterpret_cast<ImTextureID>(tex);
+#endif
 }
 
 // make sure this doesn't break in some future version
