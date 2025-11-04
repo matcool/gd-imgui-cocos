@@ -18,3 +18,10 @@ add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 target_link_libraries(test-mod imgui-cocos)
 
 setup_geode_mod(test-mod)
+
+# embed ttf font
+include(embed.cmake)
+
+set(FONT_TTF_PATH ${CPM_PACKAGE_imgui_SOURCE_DIR}/misc/fonts/DroidSans.ttf)
+FileEmbedAdd("${FONT_TTF_PATH}")
+target_link_libraries(test-mod embedded_files)
