@@ -108,10 +108,8 @@ public:
 	}
 
 	char const* getContentText() override {
-		m_text = "";
-		for (auto str : ImGui::GetInputTextState(ImGui::GetFocusID())->TextA) {
-			m_text += str;
-		}
+		auto& buffer = ImGui::GetInputTextState(ImGui::GetFocusID())->TextA;
+		m_text = std::string(buffer.begin(), buffer.end());
 		return m_text.c_str();
 	}
 
