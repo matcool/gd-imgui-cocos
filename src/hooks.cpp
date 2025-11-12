@@ -81,9 +81,10 @@ ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
 		case KEY_Left: return ImGuiKey_LeftArrow;
 		case KEY_Right: return ImGuiKey_RightArrow;
 
-		case KEY_Control: return ImGuiKey_ModCtrl;
-		case KEY_Shift: return ImGuiKey_ModShift;
-		case KEY_Alt: return ImGuiKey_ModAlt;
+		case KEY_Control: return ImGuiKey_LeftCtrl;
+		case KEY_LeftWindowsKey: return ImGuiKey_LeftSuper;
+		case KEY_Shift: return ImGuiKey_LeftShift;
+		case KEY_Alt: return ImGuiKey_LeftAlt;
 		case KEY_Enter: return ImGuiKey_Enter;
 
 		case KEY_Home: return ImGuiKey_Home;
