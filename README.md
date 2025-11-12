@@ -1,6 +1,9 @@
 # gd-imgui-cocos
 
-imgui in gd using only cocos! ~~no hooks or anything~~ for geode
+imgui in gd using cocos! for geode
+
+requires imgui v1.90+ (may change in the future), but ideally use latest. \
+for older versions of imgui try older commits or just fork idk..
 
 ## setup
 
@@ -15,7 +18,7 @@ target_link_libraries(${PROJECT_NAME} imgui-cocos)
 You may specify what version of imgui you want to use by setting `IMGUI_VERSION` before including the library:
 
 ```cmake
-set(IMGUI_VERSION "v1.70")
+set(IMGUI_VERSION "v1.92.3")
 CPMAddPackage("gh:matcool/gd-imgui-cocos#...")
 ```
 
