@@ -41,6 +41,12 @@ class $modify(CCMouseDispatcher) {
 	#define IF_2_207(...)
 #endif
 
+#if GEODE_COMP_GD_VERSION >= 22080
+	#define IF_2_208(...) __VA_ARGS__
+#else
+	#define IF_2_208(...)
+#endif
+
 class $modify(CCIMEDispatcher) {
 	void dispatchInsertText(const char* text, int len IF_2_2(, enumKeyCodes keys)) {
 		if (!ImGuiCocos::get().isInitialized())
@@ -102,9 +108,9 @@ bool shouldBlockInput() {
 
 #ifndef GEODE_IS_IOS
 class $modify(CCKeyboardDispatcher) {
-	bool dispatchKeyboardMSG(enumKeyCodes key, bool down IF_2_2(, bool repeat)) {
+	bool dispatchKeyboardMSG(enumKeyCodes key, bool down IF_2_2(, bool repeat) IF_2_208(, double time)) {
 		if (!ImGuiCocos::get().isInitialized())
-			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat));
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat) IF_2_208(, time));
 
 		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
 		if (shouldEatInput || !down) {
@@ -116,7 +122,7 @@ class $modify(CCKeyboardDispatcher) {
 		if (shouldEatInput) {
 			return false;
 		} else {
-			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat));
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat) IF_2_208(, time));
 		}
 	}
 };
