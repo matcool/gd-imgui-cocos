@@ -141,7 +141,7 @@ $execute {
 
 				// handle pasting
 				if (isDown && evt.key == KEY_V
-			#if GEODE_IS_MACOS
+			#ifdef GEODE_IS_MACOS
 					&& (evt.modifiers & KeyboardModifier::Super)
 			#else
 					&& (evt.modifiers & KeyboardModifier::Control)
