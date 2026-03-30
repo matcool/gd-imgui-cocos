@@ -126,6 +126,7 @@ bool shouldBlockInput() {
 	return inst.isVisible() && inst.getInputMode() == ImGuiCocos::InputMode::Blocking;
 }
 
+#if GEODE_COMP_GD_VERSION >= 22080
 $execute {
 	KeyboardInputEvent().listen([](auto& evt) {
 		if (!ImGuiCocos::get().isInitialized())
@@ -154,6 +155,29 @@ $execute {
 		return shouldEatInput;
 	}).leak();
 }
+#else
+#ifndef GEODE_IS_IOS
+class $modify(CCKeyboardDispatcher) {
+	bool dispatchKeyboardMSG(enumKeyCodes key, bool down IF_2_2(, bool repeat) IF_2_208(, double time)) {
+		if (!ImGuiCocos::get().isInitialized())
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat) IF_2_208(, time));
+
+		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
+		if (shouldEatInput || !down) {
+			const auto imKey = cocosToImGuiKey(key);
+			if (imKey != ImGuiKey_None) {
+				ImGui::GetIO().AddKeyEvent(imKey, down);
+			}
+		}
+		if (shouldEatInput) {
+			return false;
+		} else {
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat) IF_2_208(, time));
+		}
+	}
+};
+#endif
+#endif
 
 class $modify(ImGuiCocosCCTouchDispatcher, CCTouchDispatcher) {
 	void touches(CCSet* touches, CCEvent* event, unsigned int type) {
