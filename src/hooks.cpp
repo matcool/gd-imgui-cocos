@@ -127,6 +127,19 @@ bool shouldBlockInput() {
 }
 
 #if GEODE_COMP_GD_VERSION >= 22080
+#ifdef GEODE_IS_MACOS
+// this is a workaround for ListenerResult::Stop preventing dispatchInsertText from getting called on macOS
+static bool s_shouldEatInput = false;
+
+class $modify(ImGuiCocosCCKeyboardDispatcher, CCKeyboardDispatcher) {
+	bool dispatchKeyboardMSG(enumKeyCodes key, bool down, bool repeat, double time) {
+		if (!s_shouldEatInput)
+			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down, repeat, time);
+		s_shouldEatInput = false;
+		return false;
+	}
+};
+#endif
 $execute {
 	KeyboardInputEvent().listen([](auto& evt) {
 		if (!ImGuiCocos::get().isInitialized())
@@ -152,12 +165,17 @@ $execute {
 			}
 		}
 
+	#ifdef GEODE_IS_MACOS
+		s_shouldEatInput = shouldEatInput;
+		return ListenerResult::Propagate;
+	#else
 		return shouldEatInput;
+	#endif
 	}).leak();
 }
 #else
 #ifndef GEODE_IS_IOS
-class $modify(CCKeyboardDispatcher) {
+class $modify(ImGuiCocosCCKeyboardDispatcher, CCKeyboardDispatcher) {
 	bool dispatchKeyboardMSG(enumKeyCodes key, bool down IF_2_2(, bool repeat) IF_2_208(, double time)) {
 		if (!ImGuiCocos::get().isInitialized())
 			return CCKeyboardDispatcher::dispatchKeyboardMSG(key, down IF_2_2(, repeat) IF_2_208(, time));
