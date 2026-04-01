@@ -147,7 +147,7 @@ $execute {
 
 		const bool shouldEatInput = ImGui::GetIO().WantCaptureKeyboard || shouldBlockInput();
 		const bool isDown = evt.action != KeyboardInputData::Action::Release;
-		if (shouldEatInput && evt.key != KEY_None) {
+		if (shouldEatInput || !isDown) {
 			const auto imKey = cocosToImGuiKey(evt.key);
 			if (imKey != ImGuiKey_None) {
 				ImGui::GetIO().AddKeyEvent(imKey, isDown);
