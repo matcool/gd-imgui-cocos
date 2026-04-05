@@ -126,7 +126,10 @@ bool shouldBlockInput() {
 	return inst.isVisible() && inst.getInputMode() == ImGuiCocos::InputMode::Blocking;
 }
 
+// Use Geode 5.0.0 keyboard event system
+// would use a geode version check here, but there is no macro for it..
 #if GEODE_COMP_GD_VERSION >= 22080
+
 #ifdef GEODE_IS_MACOS
 // this is a workaround for ListenerResult::Stop preventing dispatchInsertText from getting called on macOS
 static bool s_shouldEatInput = false;
@@ -140,6 +143,7 @@ class $modify(ImGuiCocosCCKeyboardDispatcher, CCKeyboardDispatcher) {
 	}
 };
 #endif
+
 $execute {
 	KeyboardInputEvent().listen([](auto& evt) {
 		if (!ImGuiCocos::get().isInitialized())
@@ -174,6 +178,7 @@ $execute {
 	}).leak();
 }
 #else
+// otherwise, hook dispatchKeyboardMSG
 #ifndef GEODE_IS_IOS
 class $modify(ImGuiCocosCCKeyboardDispatcher, CCKeyboardDispatcher) {
 	bool dispatchKeyboardMSG(enumKeyCodes key, bool down IF_2_2(, bool repeat) IF_2_208(, double time)) {
