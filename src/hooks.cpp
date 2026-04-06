@@ -99,7 +99,7 @@ ImGuiKey cocosToImGuiKey(cocos2d::enumKeyCodes key) {
 
 		case KEY_Control: return ImGuiKey_LeftCtrl;
 		case KEY_LeftControl: return ImGuiKey_LeftCtrl;
-		case KEY_RightControl: return ImGuiKey_RightCtrl;
+		case KEY_RightContol: return ImGuiKey_RightCtrl;
 		case KEY_LeftWindowsKey: return ImGuiKey_LeftSuper;
 		case KEY_RightWindowsKey: return ImGuiKey_RightSuper;
 		case KEY_Shift: return ImGuiKey_LeftShift;
