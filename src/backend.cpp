@@ -229,7 +229,8 @@ ImGuiCocos& ImGuiCocos::setup() {
 #if IMGUI_VERSION_NUM >= 19110
 	// define geode's clipboard funcs for imgui
 	ImGui::GetPlatformIO().Platform_GetClipboardTextFn = [](ImGuiContext* ctx) {
-		static std::string text = geode::utils::clipboard::read();
+		static std::string text;
+		text = geode::utils::clipboard::read();
 		return text.c_str();
 	};
 	ImGui::GetPlatformIO().Platform_SetClipboardTextFn = [](ImGuiContext* ctx, const char* text) {
