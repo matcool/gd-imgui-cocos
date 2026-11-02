@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cocos2d.h>
-#include <functional>
 #include <imgui.h>
+#include <Geode/utils/function.hpp>
 
 class ImGuiCocos {
 public:
@@ -18,7 +18,8 @@ private:
 	bool m_visible = true;
 	bool m_reloading = false;
 	bool m_forceLegacy = false;
-	std::function<void()> m_setupCall, m_drawCall;
+	geode::Function<void()> m_setupCall, m_drawCall;
+	geode::Function<void()> m_preDrawCall;
 	InputMode m_inputMode = InputMode::Default;
 	ImGuiMouseCursor m_lastCursor = ImGuiMouseCursor_COUNT;
 #ifdef IMGUI_HAS_TEXTURES
@@ -44,10 +45,13 @@ public:
 	// called on swapBuffers
 	void drawFrame();
 
-	ImGuiCocos& setup(std::function<void()> fun);
+	ImGuiCocos& setup(geode::Function<void()> fun);
 	ImGuiCocos& setup();
 
-	ImGuiCocos& draw(std::function<void()> fun);
+	ImGuiCocos& draw(geode::Function<void()> fun);
+
+	// Sets a callback to run right before ImGui is drawn, but after GD already has
+	ImGuiCocos& setPreDrawCall(geode::Function<void()> fun);
 
 	// used to reinitialize imgui context
 	void reload();
@@ -66,4 +70,6 @@ public:
 	
 	static ImVec2 cocosToFrame(const cocos2d::CCPoint& pos);
 	static cocos2d::CCPoint frameToCocos(const ImVec2& pos);
+
+	void runPreDrawCall();
 };

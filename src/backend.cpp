@@ -127,17 +127,29 @@ ImGuiCocos& ImGuiCocos::get() {
 }
 
 ImGuiCocos::ImGuiCocos() {
-	m_setupCall = m_drawCall = [] {};
+	m_setupCall = [] {};
+	m_drawCall = [] {};
 }
 
-ImGuiCocos& ImGuiCocos::setup(std::function<void()> fun) {
+ImGuiCocos& ImGuiCocos::setup(geode::Function<void()> fun) {
 	m_setupCall = std::move(fun);
 	return this->setup();
 }
 
-ImGuiCocos& ImGuiCocos::draw(std::function<void()> fun) {
+ImGuiCocos& ImGuiCocos::draw(geode::Function<void()> fun) {
 	m_drawCall = std::move(fun);
 	return *this;
+}
+
+ImGuiCocos& ImGuiCocos::setPreDrawCall(geode::Function<void()> fun) {
+	m_preDrawCall = std::move(fun);
+	return *this;
+}
+
+void ImGuiCocos::runPreDrawCall() {
+	if (m_preDrawCall) {
+		m_preDrawCall();
+	}
 }
 
 void ImGuiCocos::toggle() {

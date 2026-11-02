@@ -153,13 +153,13 @@ $execute {
 		const bool isDown = evt.action != KeyboardInputData::Action::Release;
 		if (shouldEatInput || !isDown) {
 			auto& io = ImGui::GetIO();
-		
+
 		#ifdef GEODE_IS_WINDOWS
             io.AddKeyEvent(ImGuiMod_Ctrl, static_cast<bool>(evt.modifiers & KeyboardModifier::Control));
             io.AddKeyEvent(ImGuiMod_Shift, static_cast<bool>(evt.modifiers & KeyboardModifier::Shift));
             io.AddKeyEvent(ImGuiMod_Alt,static_cast<bool>(evt.modifiers & KeyboardModifier::Alt));
         #endif
-		
+
 			const auto imKey = cocosToImGuiKey(evt.key);
 			if (imKey != ImGuiKey_None) {
 				io.AddKeyEvent(imKey, isDown);
@@ -210,6 +210,7 @@ class $modify(ImGuiCocosCCKeyboardDispatcher, CCKeyboardDispatcher) {
 #endif
 #endif
 
+#ifndef IMGUI_ILL_HANDLE_TOUCHES
 class $modify(ImGuiCocosCCTouchDispatcher, CCTouchDispatcher) {
 	void touches(CCSet* touches, CCEvent* event, unsigned int type) {
 		if (!ImGuiCocos::get().isInitialized() || !touches)
@@ -248,6 +249,7 @@ class $modify(ImGuiCocosCCTouchDispatcher, CCTouchDispatcher) {
 		}
 	}
 };
+#endif
 
 // need imgui to be drawn inbetween glClear and swapBuffers:
 // drawScene() {
@@ -273,8 +275,12 @@ class $modify(ImGuiCocosCCEGLView, CCEGLView) {
 #endif
 
 	void swapBuffers() {
-		if (ImGuiCocos::get().isInitialized())
-			ImGuiCocos::get().drawFrame();
+		auto& inst = ImGuiCocos::get();
+
+		inst.runPreDrawCall();
+
+		if (inst.isInitialized())
+			inst.drawFrame();
 
 		CCEGLView::swapBuffers();
 	}
@@ -298,8 +304,13 @@ class $modify(ImGuiCocosCCEGLView, CCEGLView) {
 class $modify(ImGuiCocosCCDirector, CCDirector) {
 	void drawScene() {
 		CCDirector::drawScene();
-		if (ImGuiCocos::get().isInitialized())
-			ImGuiCocos::get().drawFrame();
+
+		auto& inst = ImGuiCocos::get();
+
+		inst.runPreDrawCall();
+
+		if (inst.isInitialized())
+			inst.drawFrame();
 	}
 };
 
