@@ -10,7 +10,7 @@
 
 using namespace geode::prelude;
 
-#ifndef GEODE_IS_IOS
+#if !defined(GEODE_IS_IOS) && !defined(IMGUI_ILL_HANDLE_TOUCHES)
 class $modify(ImGuiCocosCCMouseDispatcher, CCMouseDispatcher) {
 	bool dispatchScrollMSG(float y, float x) {
 		if (!ImGuiCocos::get().isInitialized())
